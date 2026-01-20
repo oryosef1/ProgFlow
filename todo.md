@@ -8,7 +8,7 @@
 - [x] **1.3 Create GlassPanel** - Frosted glass effect, soft borders, rounded corners
 - [x] **1.4 Create EnvelopeVisualizer** - Mini ADSR curve display
 - [x] **1.5 Create ResizablePanel** - Drag-to-resize with min/max constraints
-- [ ] **1.6 Refactor FMSynthEditor** - Apply new components and layout
+- [x] **1.6 Refactor FMSynthEditor** - Apply new components and layout
 - [ ] **1.7 Test and polish** - Verify looks good, smooth animations
 
 ### Phase 2: Other Synth Editors
