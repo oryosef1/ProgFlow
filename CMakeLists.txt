@@ -113,6 +113,9 @@ target_sources(ProgFlow PRIVATE
     Source/UI/Common/VerticalMeter.cpp
     Source/UI/Common/WaveSelector.cpp
     Source/UI/Common/SectionPanel.cpp
+    Source/UI/Common/GlassPanel.cpp
+    Source/UI/Common/EnvelopeVisualizer.cpp
+    Source/UI/Common/ResizablePanel.cpp
     Source/UI/Tracks/TrackHeader.cpp
     Source/UI/Tracks/TrackHeaderPanel.cpp
     Source/UI/Mixer/ChannelStrip.cpp
@@ -275,6 +278,9 @@ target_sources(ProgFlowPlugin PRIVATE
     Source/UI/Common/VerticalMeter.cpp
     Source/UI/Common/WaveSelector.cpp
     Source/UI/Common/SectionPanel.cpp
+    Source/UI/Common/GlassPanel.cpp
+    Source/UI/Common/EnvelopeVisualizer.cpp
+    Source/UI/Common/ResizablePanel.cpp
     Source/UI/Tracks/TrackHeader.cpp
     Source/UI/Tracks/TrackHeaderPanel.cpp
     Source/UI/Mixer/ChannelStrip.cpp

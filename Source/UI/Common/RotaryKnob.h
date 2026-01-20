@@ -20,10 +20,11 @@ class RotaryKnob : public juce::Component,
                    public juce::TooltipClient
 {
 public:
-    static constexpr int KNOB_DIAMETER = 48;
-    static constexpr int LABEL_HEIGHT = 16;
-    static constexpr int LABEL_GAP = 4;
-    static constexpr int TOTAL_HEIGHT = KNOB_DIAMETER + LABEL_GAP + LABEL_HEIGHT; // 68px
+    // Modern design sizes
+    static constexpr int KNOB_DIAMETER = 52;
+    static constexpr int LABEL_HEIGHT = 18;
+    static constexpr int LABEL_GAP = 6;
+    static constexpr int TOTAL_HEIGHT = KNOB_DIAMETER + LABEL_GAP + LABEL_HEIGHT; // 76px
 
     RotaryKnob(const juce::String& name = "");
     ~RotaryKnob() override;

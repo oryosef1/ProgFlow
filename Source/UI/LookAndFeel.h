@@ -13,55 +13,82 @@ namespace ProgFlowSpacing
     static constexpr int LG = 16;
     static constexpr int XL = 24;
 
-    // Component sizes
-    static constexpr int KNOB_SIZE = 48;
-    static constexpr int KNOB_WITH_LABEL = 68;
-    static constexpr int SECTION_HEADER_HEIGHT = 16;
-    static constexpr int COMBO_HEIGHT = 24;
+    // Component sizes - Modern design
+    static constexpr int KNOB_SIZE = 52;           // Modern knob diameter
+    static constexpr int KNOB_WITH_LABEL = 76;     // Knob + gap + label
+    static constexpr int SECTION_HEADER_HEIGHT = 20;
+    static constexpr int COMBO_HEIGHT = 28;
     static constexpr int DIVIDER_WIDTH = 1;
+    static constexpr int RESIZE_HANDLE = 4;        // Drag handle thickness
+
+    // Glass panel
+    static constexpr int GLASS_CORNER_RADIUS = 8;
+    static constexpr int GLASS_BORDER_WIDTH = 1;
+
+    // Header
+    static constexpr int HEADER_HEIGHT = 44;
 
     // Legacy (keep for compatibility)
-    static constexpr int KNOB_MIN_SIZE = 48;
-    static constexpr int KNOB_PREFERRED = 48;
-    static constexpr int SECTION_CORNER_RADIUS = 6;
-    static constexpr int BUTTON_CORNER_RADIUS = 4;
+    static constexpr int KNOB_MIN_SIZE = 52;
+    static constexpr int KNOB_PREFERRED = 52;
+    static constexpr int SECTION_CORNER_RADIUS = 8;
+    static constexpr int BUTTON_CORNER_RADIUS = 6;
 }
 
 /**
  * ColorScheme - Holds all colors for a theme
+ * Modern design with glassmorphism, glows, and depth
  */
 struct ColorScheme
 {
-    // Backgrounds
-    juce::Colour bgPrimary;
-    juce::Colour bgSecondary;
-    juce::Colour bgTertiary;
+    // Backgrounds (with depth)
+    juce::Colour bgPrimary;      // Deep background
+    juce::Colour bgSecondary;    // Panel backgrounds
+    juce::Colour bgTertiary;     // Hover states
     juce::Colour bgHover;
-    juce::Colour sectionBg;      // Darker inset sections
+    juce::Colour sectionBg;      // Section backgrounds
     juce::Colour surfaceBg;      // Raised surfaces
     juce::Colour dividerLine;    // Thin section dividers
 
-    // Accents
+    // Glass effect
+    juce::Colour glassOverlay;   // Frosted glass overlay
+    juce::Colour glassHover;     // Glass hover state
+    juce::Colour glassBorder;    // Subtle glass border
+
+    // Accents (vibrant)
     juce::Colour accentBlue;
     juce::Colour accentGreen;
     juce::Colour accentOrange;
     juce::Colour accentRed;
 
+    // Glow variants (for bloom effects)
+    juce::Colour glowBlue;
+    juce::Colour glowGreen;
+    juce::Colour glowOrange;
+    juce::Colour glowRed;
+
+    // Knob colors
+    juce::Colour knobBody;       // Knob background
+    juce::Colour knobBodyLight;  // Knob gradient light
+    juce::Colour knobArcBg;      // Inactive arc
+    juce::Colour knobIndicator;  // Position indicator
+
     // Text
     juce::Colour textPrimary;
     juce::Colour textSecondary;
-    juce::Colour textMuted;      // Section headers, less important
+    juce::Colour textMuted;      // Section headers
     juce::Colour textDisabled;
 
     // Borders
     juce::Colour border;
     juce::Colour borderLight;
+    juce::Colour borderGlow;     // Glowing border on focus
 
     // Meters
     juce::Colour meterGreen;
     juce::Colour meterYellow;
     juce::Colour meterRed;
-    juce::Colour meterBg;        // Very dark meter background
+    juce::Colour meterBg;
 };
 
 /**
@@ -117,11 +144,28 @@ namespace ProgFlowColours
     inline juce::Colour surfaceBg()    { return ThemeManager::getInstance().getColors().surfaceBg; }
     inline juce::Colour dividerLine()  { return ThemeManager::getInstance().getColors().dividerLine; }
 
+    // Glass effect
+    inline juce::Colour glassOverlay() { return ThemeManager::getInstance().getColors().glassOverlay; }
+    inline juce::Colour glassHover()   { return ThemeManager::getInstance().getColors().glassHover; }
+    inline juce::Colour glassBorder()  { return ThemeManager::getInstance().getColors().glassBorder; }
+
     // Accents
     inline juce::Colour accentBlue()   { return ThemeManager::getInstance().getColors().accentBlue; }
     inline juce::Colour accentGreen()  { return ThemeManager::getInstance().getColors().accentGreen; }
     inline juce::Colour accentOrange() { return ThemeManager::getInstance().getColors().accentOrange; }
     inline juce::Colour accentRed()    { return ThemeManager::getInstance().getColors().accentRed; }
+
+    // Glows
+    inline juce::Colour glowBlue()     { return ThemeManager::getInstance().getColors().glowBlue; }
+    inline juce::Colour glowGreen()    { return ThemeManager::getInstance().getColors().glowGreen; }
+    inline juce::Colour glowOrange()   { return ThemeManager::getInstance().getColors().glowOrange; }
+    inline juce::Colour glowRed()      { return ThemeManager::getInstance().getColors().glowRed; }
+
+    // Knobs
+    inline juce::Colour knobBody()     { return ThemeManager::getInstance().getColors().knobBody; }
+    inline juce::Colour knobBodyLight(){ return ThemeManager::getInstance().getColors().knobBodyLight; }
+    inline juce::Colour knobArcBg()    { return ThemeManager::getInstance().getColors().knobArcBg; }
+    inline juce::Colour knobIndicator(){ return ThemeManager::getInstance().getColors().knobIndicator; }
 
     // Text
     inline juce::Colour textPrimary()  { return ThemeManager::getInstance().getColors().textPrimary; }
@@ -132,6 +176,7 @@ namespace ProgFlowColours
     // Borders
     inline juce::Colour border()       { return ThemeManager::getInstance().getColors().border; }
     inline juce::Colour borderLight()  { return ThemeManager::getInstance().getColors().borderLight; }
+    inline juce::Colour borderGlow()   { return ThemeManager::getInstance().getColors().borderGlow; }
 
     // Meters
     inline juce::Colour meterGreen()   { return ThemeManager::getInstance().getColors().meterGreen; }

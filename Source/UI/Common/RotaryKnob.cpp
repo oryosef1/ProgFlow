@@ -56,67 +56,115 @@ void RotaryKnob::paint(juce::Graphics& g)
     // Use the fixed knob diameter
     auto centreX = static_cast<float>(knobArea.getCentreX());
     auto centreY = static_cast<float>(knobArea.getCentreY());
-    auto radius = KNOB_DIAMETER * 0.46f;  // ~44px diameter for 48px area
+    auto radius = KNOB_DIAMETER * 0.46f;  // ~24px radius for 52px diameter
 
-    // Background circle - darker, no border by default
-    g.setColour(ProgFlowColours::sectionBg());
+    float startAngle = juce::MathConstants<float>::pi * 1.25f;
+    float endAngle = juce::MathConstants<float>::pi * 2.75f;
+    float angle = valueToAngle(currentValue);
+    float normalizedValue = (currentValue - minValue) / (maxValue - minValue);
+
+    // Outer glow (bloom effect) when there's value
+    if (normalizedValue > 0.01f && !midiLearnActive)
+    {
+        g.setColour(ProgFlowColours::glowBlue());
+        g.fillEllipse(centreX - radius - 3, centreY - radius - 3,
+                      (radius + 3) * 2, (radius + 3) * 2);
+    }
+
+    // Background circle with gradient
+    juce::ColourGradient knobGradient(
+        ProgFlowColours::knobBodyLight(), centreX, centreY - radius * 0.5f,
+        ProgFlowColours::knobBody(), centreX, centreY + radius,
+        false);
+    g.setGradientFill(knobGradient);
     g.fillEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2);
 
-    // Hover glow ring
-    if (isHovering && !isDragging && !midiLearnActive)
-    {
-        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.3f));
-        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
-                      radius * 2 + 2, radius * 2 + 2, 1.5f);
-    }
+    // Subtle inner shadow for depth
+    juce::ColourGradient innerShadow(
+        juce::Colour(0x00000000), centreX, centreY,
+        juce::Colour(0x25000000), centreX, centreY + radius,
+        true);
+    g.setGradientFill(innerShadow);
+    g.fillEllipse(centreX - radius + 2, centreY - radius + 2,
+                  (radius - 2) * 2, (radius - 2) * 2);
+
+    // Border ring
+    g.setColour(ProgFlowColours::glassBorder());
+    g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.0f);
 
     // Special state borders (MIDI learn, mapped, dragging)
     if (midiLearnActive)
     {
         g.setColour(ProgFlowColours::accentOrange());
-        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 2.0f);
+        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
+                      (radius + 1) * 2, (radius + 1) * 2, 2.0f);
     }
     else if (isDragging)
     {
         g.setColour(ProgFlowColours::accentBlue());
-        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 2.0f);
+        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
+                      (radius + 1) * 2, (radius + 1) * 2, 2.0f);
     }
     else if (hasMidiMapping)
     {
         g.setColour(ProgFlowColours::accentGreen());
-        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.5f);
+        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
+                      (radius + 1) * 2, (radius + 1) * 2, 1.5f);
+    }
+    else if (isHovering)
+    {
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.4f));
+        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
+                      (radius + 1) * 2, (radius + 1) * 2, 1.5f);
     }
 
-    // Arc (value indicator)
-    float startAngle = juce::MathConstants<float>::pi * 1.25f;
-    float endAngle = juce::MathConstants<float>::pi * 2.75f;
-    float angle = valueToAngle(currentValue);
+    // Arc background (inactive portion)
+    juce::Path arcBgPath;
+    arcBgPath.addCentredArc(centreX, centreY,
+                            radius * 0.78f, radius * 0.78f,
+                            0.0f,
+                            startAngle, endAngle,
+                            true);
+    g.setColour(ProgFlowColours::knobArcBg());
+    g.strokePath(arcBgPath, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved,
+                                                  juce::PathStrokeType::rounded));
 
-    juce::Path arcPath;
-    arcPath.addCentredArc(centreX, centreY,
-                          radius * 0.82f, radius * 0.82f,
-                          0.0f,
-                          startAngle, angle,
-                          true);
+    // Arc (value indicator with glow)
+    if (normalizedValue > 0.01f)
+    {
+        juce::Path arcPath;
+        arcPath.addCentredArc(centreX, centreY,
+                              radius * 0.78f, radius * 0.78f,
+                              0.0f,
+                              startAngle, angle,
+                              true);
 
-    // Arc color - brighter when dragging
-    auto arcColour = isDragging ? ProgFlowColours::accentBlue().brighter(0.2f)
-                                : ProgFlowColours::accentBlue();
-    g.setColour(arcColour);
-    g.strokePath(arcPath, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved,
-                                                juce::PathStrokeType::rounded));
+        // Glow layer
+        auto glowColour = midiLearnActive ? ProgFlowColours::glowOrange() : ProgFlowColours::glowBlue();
+        g.setColour(glowColour);
+        g.strokePath(arcPath, juce::PathStrokeType(6.0f, juce::PathStrokeType::curved,
+                                                    juce::PathStrokeType::rounded));
 
-    // Pointer line - clean, no dot
-    float pointerLength = radius * 0.55f;
-    float pointerEndX = centreX + std::sin(angle) * pointerLength;
-    float pointerEndY = centreY - std::cos(angle) * pointerLength;
+        // Main arc
+        auto arcColour = midiLearnActive ? ProgFlowColours::accentOrange()
+                       : (isDragging ? ProgFlowColours::accentBlue().brighter(0.2f)
+                                     : ProgFlowColours::accentBlue());
+        g.setColour(arcColour);
+        g.strokePath(arcPath, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved,
+                                                    juce::PathStrokeType::rounded));
+    }
 
-    g.setColour(ProgFlowColours::textPrimary());
-    g.drawLine(centreX, centreY, pointerEndX, pointerEndY, 2.0f);
+    // Position indicator dot
+    float indicatorRadius = radius * 0.62f;
+    float indicatorX = centreX + std::sin(angle) * indicatorRadius;
+    float indicatorY = centreY - std::cos(angle) * indicatorRadius;
 
-    // Label - always visible
+    g.setColour(ProgFlowColours::knobIndicator());
+    g.fillEllipse(indicatorX - 3.0f, indicatorY - 3.0f, 6.0f, 6.0f);
+
+    // Label
     g.setColour(ProgFlowColours::textSecondary());
-    g.setFont(11.0f);
+    g.setFont(12.0f);
     g.drawText(label.isEmpty() ? name : label, labelArea.toFloat(), juce::Justification::centred);
 }
 

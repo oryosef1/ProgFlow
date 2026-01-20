@@ -3,11 +3,11 @@
 ## Current Focus: UI Redesign "ProgFlow Modern"
 
 ### Phase 1: Synth Editor Panel (In Progress)
-- [ ] **1.1 Update LookAndFeel** - New color palette, gradients, glow effects
-- [ ] **1.2 Create ModernKnob** - 52px, gradient body, glowing arc with bloom
-- [ ] **1.3 Create GlassPanel** - Frosted glass effect, soft borders, rounded corners
-- [ ] **1.4 Create EnvelopeVisualizer** - Mini ADSR curve display (80x40px)
-- [ ] **1.5 Create ResizablePanel** - Drag-to-resize with min/max constraints
+- [x] **1.1 Update LookAndFeel** - New color palette, gradients, glow effects
+- [x] **1.2 Update RotaryKnob** - 52px, gradient body, glowing arc with bloom
+- [x] **1.3 Create GlassPanel** - Frosted glass effect, soft borders, rounded corners
+- [x] **1.4 Create EnvelopeVisualizer** - Mini ADSR curve display
+- [x] **1.5 Create ResizablePanel** - Drag-to-resize with min/max constraints
 - [ ] **1.6 Refactor FMSynthEditor** - Apply new components and layout
 - [ ] **1.7 Test and polish** - Verify looks good, smooth animations
 
