@@ -1,0 +1,42 @@
+# Build directories
+build/
+Builds/
+cmake-build-*/
+
+# IDE
+.idea/
+.vscode/
+*.xcodeproj/
+*.xcworkspace/
+*.sln
+*.vcxproj*
+
+# Compiled
+*.o
+*.obj
+*.a
+*.lib
+*.dylib
+*.so
+*.dll
+*.exe
+
+# JUCE artifacts
+*_artefacts/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Windows
+Thumbs.db
+*.pdb
+
+# Temporary
+*.tmp
+*.temp
+*.swp
+*~
+
+# Claude Code local settings (keep project CLAUDE.md)
+.claude/settings.local.json

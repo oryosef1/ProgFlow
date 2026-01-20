@@ -1,0 +1,143 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: brew install ninja
+
+      - name: Configure
+        run: cmake --preset macos-release
+
+      - name: Build
+        run: cmake --build --preset macos-release
+
+      - name: Run Tests
+        run: ./build/macos-release/ProgFlowTests_artefacts/Release/ProgFlowTests
+
+      - name: Package
+        if: github.event_name == 'release'
+        run: |
+          VERSION=${{ github.event.release.tag_name }}
+          VERSION=${VERSION#v}
+          VERSION=$VERSION ./packaging/package-macos.sh
+
+      - name: Upload App
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProgFlow-macOS
+          path: |
+            build/macos-release/ProgFlow_artefacts/Release/ProgFlow.app
+            build/macos-release/ProgFlowPlugin_artefacts/Release/VST3/ProgFlow.vst3
+            build/macos-release/ProgFlowPlugin_artefacts/Release/AU/ProgFlow.component
+
+      - name: Upload DMG
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProgFlow-macOS-DMG
+          path: dist/*.dmg
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: cmake --preset windows-release
+
+      - name: Build
+        run: cmake --build --preset windows-release
+
+      - name: Run Tests
+        run: ./build/windows-release/ProgFlowTests_artefacts/Release/ProgFlowTests.exe
+
+      - name: Upload App
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProgFlow-Windows
+          path: |
+            build/windows-release/ProgFlow_artefacts/Release/ProgFlow.exe
+            build/windows-release/ProgFlowPlugin_artefacts/Release/VST3/ProgFlow.vst3
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            libasound2-dev \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libwebkit2gtk-4.0-dev \
+            libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake --preset linux-release
+
+      - name: Build
+        run: cmake --build --preset linux-release
+
+      - name: Run Tests
+        run: ./build/linux-release/ProgFlowTests_artefacts/Release/ProgFlowTests
+
+      - name: Upload App
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProgFlow-Linux
+          path: |
+            build/linux-release/ProgFlow_artefacts/Release/ProgFlow
+            build/linux-release/ProgFlowPlugin_artefacts/Release/VST3/ProgFlow.vst3
+
+  release:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release archives
+        run: |
+          cd ProgFlow-macOS && zip -r ../ProgFlow-macOS.zip . && cd ..
+          cd ProgFlow-Windows && zip -r ../ProgFlow-Windows.zip . && cd ..
+          cd ProgFlow-Linux && zip -r ../ProgFlow-Linux.zip . && cd ..
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ProgFlow-macOS.zip
+            ProgFlow-Windows.zip
+            ProgFlow-Linux.zip
+            ProgFlow-macOS-DMG/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
