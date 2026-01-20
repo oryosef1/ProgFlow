@@ -1,62 +1,45 @@
 # ProgFlow TODO
 
-## Current Focus: UI Redesign "ProgFlow Modern"
+## Current Focus: "Saturn" UI Redesign
 
-### Phase 1: Synth Editor Panel (In Progress)
-- [x] **1.1 Update LookAndFeel** - New color palette, gradients, glow effects
-- [x] **1.2 Update RotaryKnob** - 52px, gradient body, glowing arc with bloom
-- [x] **1.3 Create GlassPanel** - Frosted glass effect, soft borders, rounded corners
-- [x] **1.4 Create EnvelopeVisualizer** - Mini ADSR curve display
-- [x] **1.5 Create ResizablePanel** - Drag-to-resize with min/max constraints
-- [x] **1.6 Refactor FMSynthEditor** - Apply new components and layout
-- [ ] **1.7 Test and polish** - Verify looks good, smooth animations
+FabFilter-inspired professional dark theme with purple accents. See `docs/plans/2026-01-20-saturn-ui-redesign.md` for full spec.
 
-### Phase 2: Other Synth Editors
-- [ ] AnalogSynthEditor redesign
-- [ ] PolyPadSynthEditor redesign
-- [ ] OrganSynthEditor redesign
-- [ ] StringSynthEditor redesign
-- [ ] ProSynthEditor redesign
-- [ ] DrumSynthEditor redesign
-- [ ] SamplerEditor redesign
-- [ ] SoundFontPlayerEditor redesign
+---
 
-### Phase 3: Track List Panel
-- [ ] Make panel resizable (drag right edge)
-- [ ] Larger track headers with modern styling
-- [ ] Better S/M/R buttons (color-coded)
-- [ ] Improved volume/pan controls
-- [ ] Track color picker
-- [ ] Track icons for synth type
+### Phase 1: Foundation
+- [ ] **1.1** Update LookAndFeel with Saturn color palette
+- [ ] **1.2** Redesign RotaryKnob (48px, metallic gradient, value display)
+- [ ] **1.3** Create CardPanel component (gradient bg, shadow, rounded corners)
+- [ ] **1.4** Style ComboBox (purple focus, custom arrow)
+- [ ] **1.5** Style S/M/R buttons (cyan/gold/coral colors)
 
-### Phase 4: Transport Bar
-- [ ] Modern styling with glass effect
-- [ ] Larger, cleaner transport buttons
-- [ ] Editable project name
-- [ ] Better time display (monospace)
-- [ ] Improved meters with peak hold
+### Phase 2: Remove Redundant Synths
+- [ ] **2.1** Remove PolyPadSynth (files + all references)
+- [ ] **2.2** Remove OrganSynth (files + all references)
+- [ ] **2.3** Remove StringSynth (files + all references)
+- [ ] **2.4** Update SynthType enum and SynthFactory
 
-### Phase 5: Timeline/Arrangement
-- [ ] Make panel resizable
-- [ ] Better grid lines
-- [ ] Improved clip appearance (rounded, shadows, glass)
-- [ ] Playhead glow styling
-- [ ] Zoom controls
-- [ ] Loop region styling
+### Phase 3: FM Editor (Template)
+- [ ] **3.1** Refactor FMSynthEditor with CardPanel layout
+- [ ] **3.2** Test and polish FM editor
 
-### Phase 6: Mixer Panel
-- [ ] Make panel resizable
-- [ ] Wider channel strips with modern styling
-- [ ] Professional LED-style meters
-- [ ] Better fader styling
-- [ ] Distinct master section
+### Phase 4: Other Synth Editors
+- [ ] **4.1** AnalogSynthEditor redesign
+- [ ] **4.2** ProSynthEditor redesign
+- [ ] **4.3** DrumSynthEditor redesign
+- [ ] **4.4** SamplerEditor redesign
+- [ ] **4.5** SoundFontPlayerEditor redesign
 
-### Phase 7: Piano Roll
-- [ ] Make panel resizable
-- [ ] Velocity-based note colors
-- [ ] Clear octave separation
-- [ ] Modern toolbar styling
-- [ ] Better velocity lane
+### Phase 5: Main Panels
+- [ ] **5.1** Track List panel redesign
+- [ ] **5.2** Transport bar redesign
+- [ ] **5.3** Mixer panel redesign
+- [ ] **5.4** Timeline/Arrangement polish
+
+### Phase 6: Final Polish
+- [ ] **6.1** Consistent spacing/alignment pass
+- [ ] **6.2** Hover/focus states everywhere
+- [ ] **6.3** Final testing
 
 ---
 
@@ -67,7 +50,6 @@
 - [ ] Test save/load (Cmd+S, Cmd+O)
 - [ ] Fix "Untitled *" dirty state display
 - [ ] Bundle default SoundFont (.sf2)
-- [ ] Investigate preset loading issues
 
 ### Missing Keyboard Shortcuts
 - [ ] Select All (Cmd+A)
@@ -76,13 +58,13 @@
 
 ### Code Cleanup
 - [ ] Remove DBG() statements from production code
-- [ ] Fix manual FileChooser deletion in SoundFontPlayerEditor.cpp
 
 ---
 
 ## Completed
-- [x] Drum kit switching (was only updating 4 pads)
-- [x] Quiet drum sounds (Rim, Shaker, Cymbal, Clap)
+- [x] Drum kit switching fix
+- [x] Quiet drum sounds fix
 - [x] Git repository initialized
 - [x] CLAUDE.md created
-- [x] UI redesign plan finalized (ProgFlow Modern style)
+- [x] Initial UI redesign plan (ProgFlow Modern) - superseded by Saturn
+- [x] Saturn UI redesign plan finalized
