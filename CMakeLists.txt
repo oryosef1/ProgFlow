@@ -160,6 +160,7 @@ target_compile_definitions(ProgFlow PRIVATE
     JUCE_PLUGINHOST_VST3=1
     JUCE_PLUGINHOST_AU=1
     JUCE_MODAL_LOOPS_PERMITTED=1
+    $<$<PLATFORM_ID:Windows>:NOMINMAX>
 )
 
 target_link_libraries(ProgFlow PRIVATE
@@ -324,6 +325,7 @@ target_compile_definitions(ProgFlowPlugin PRIVATE
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
+    $<$<PLATFORM_ID:Windows>:NOMINMAX>
 )
 
 target_link_libraries(ProgFlowPlugin PRIVATE
@@ -424,6 +426,7 @@ target_compile_definitions(ProgFlowTests PRIVATE
     JUCE_USE_CURL=0
     JUCE_PLUGINHOST_VST3=1
     JUCE_PLUGINHOST_AU=1
+    $<$<PLATFORM_ID:Windows>:NOMINMAX>
 )
 
 target_link_libraries(ProgFlowTests PRIVATE
