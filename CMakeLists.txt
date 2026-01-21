@@ -181,14 +181,23 @@ target_link_libraries(ProgFlow PRIVATE
     $<$<PLATFORM_ID:Darwin>:${ACCELERATE_FRAMEWORK}>
 )
 
-# Bundle SoundFont if present in Resources folder
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2")
+# Bundle SoundFont if present in Resources folder (macOS only - uses app bundle)
+if(APPLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2")
     message(STATUS "Found SoundFont: Resources/GeneralUser.sf2 - will be bundled")
     # Copy SF2 to app bundle after build
     add_custom_command(TARGET ProgFlow POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2"
             "$<TARGET_BUNDLE_DIR:ProgFlow>/Contents/Resources/GeneralUser.sf2"
+        COMMENT "Bundling GeneralUser.sf2 SoundFont"
+    )
+elseif(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2")
+    message(STATUS "Found SoundFont: Resources/GeneralUser.sf2 - will be bundled")
+    # Copy SF2 next to exe on Windows
+    add_custom_command(TARGET ProgFlow POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2"
+            "$<TARGET_FILE_DIR:ProgFlow>/GeneralUser.sf2"
         COMMENT "Bundling GeneralUser.sf2 SoundFont"
     )
 endif()
