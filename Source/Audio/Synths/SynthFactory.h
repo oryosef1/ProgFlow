@@ -10,15 +10,12 @@ enum class SynthType
 {
     Analog = 0,
     FM,
-    PolyPad,
-    Organ,
-    String,
     Pro,
     Sampler,
     SoundFont,
     Drums,
 
-    COUNT  // Number of synth types
+    COUNT  // Number of synth types (6 synths)
 };
 
 /**

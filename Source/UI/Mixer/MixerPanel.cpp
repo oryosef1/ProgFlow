@@ -3,11 +3,12 @@
 MixerPanel::MixerPanel(AudioEngine& audioEngine)
     : audioEngine(audioEngine)
 {
-    // Viewport for scrollable track strips
+    // Viewport for scrollable track strips (Saturn styling)
     stripContainer = std::make_unique<juce::Component>();
     viewport.setViewedComponent(stripContainer.get(), false);
     viewport.setScrollBarsShown(false, true);  // Horizontal scroll only
-    viewport.setScrollBarThickness(8);
+    viewport.setScrollBarThickness(6);
+    viewport.setColour(juce::ScrollBar::thumbColourId, ProgFlowColours::textMuted());
     addAndMakeVisible(viewport);
 
     // Master channel strip
@@ -71,13 +72,14 @@ void MixerPanel::refreshTracks()
 
 void MixerPanel::paint(juce::Graphics& g)
 {
+    // Saturn design: dark background
     g.fillAll(ProgFlowColours::bgPrimary());
 
-    // Border between tracks and master
-    int masterX = getWidth() - masterStripWidth - 8;
+    // Subtle separator before master strip
+    int masterX = getWidth() - masterStripWidth - 12;
     g.setColour(ProgFlowColours::border());
-    g.drawLine(static_cast<float>(masterX), 0.0f,
-               static_cast<float>(masterX), static_cast<float>(getHeight()));
+    g.drawLine(static_cast<float>(masterX), 4.0f,
+               static_cast<float>(masterX), static_cast<float>(getHeight() - 4));
 }
 
 void MixerPanel::resized()
@@ -87,7 +89,7 @@ void MixerPanel::resized()
 
     // Master strip on right
     auto masterBounds = bounds.removeFromRight(masterStripWidth);
-    bounds.removeFromRight(8);  // Separator
+    bounds.removeFromRight(8);  // Separator gap
     masterStrip->setBounds(masterBounds);
 
     // Viewport for track strips

@@ -14,6 +14,7 @@
 #include "TimeSignatureTrack.h"
 #include "MarkerTrack.h"
 #include <vector>
+#include <map>
 
 /**
  * AudioEngine - The main audio processor for ProgFlow
@@ -177,6 +178,14 @@ private:
     juce::MidiBuffer midiBuffer;
     juce::CriticalSection midiLock;
     std::atomic<int> keyboardTrackIndex{0};  // Which track receives keyboard MIDI
+
+    // Recording: track note-on times to calculate duration at note-off
+    struct PendingNote {
+        double startBeatPosition;
+        float velocity;
+    };
+    std::map<int, PendingNote> pendingRecordingNotes;  // midiNote -> PendingNote
+    juce::CriticalSection recordingLock;
 
     // Effects chain (processes synth output before master chain)
     EffectChain effectChain;

@@ -6,58 +6,60 @@ FabFilter-inspired professional dark theme with purple accents. See `docs/plans/
 
 ---
 
-### Phase 1: Foundation
-- [ ] **1.1** Update LookAndFeel with Saturn color palette
-- [ ] **1.2** Redesign RotaryKnob (48px, metallic gradient, value display)
-- [ ] **1.3** Create CardPanel component (gradient bg, shadow, rounded corners)
-- [ ] **1.4** Style ComboBox (purple focus, custom arrow)
-- [ ] **1.5** Style S/M/R buttons (cyan/gold/coral colors)
+### Phase 1: Foundation ✓
+- [x] **1.1** Update LookAndFeel with Saturn color palette
+- [x] **1.2** Redesign RotaryKnob (48px, metallic gradient, value display)
+- [x] **1.3** Create CardPanel component (gradient bg, shadow, rounded corners)
+- [x] **1.4** Style ComboBox (purple focus, custom arrow)
+- [x] **1.5** Style S/M/R buttons (cyan/gold/coral colors)
 
-### Phase 2: Remove Redundant Synths
-- [ ] **2.1** Remove PolyPadSynth (files + all references)
-- [ ] **2.2** Remove OrganSynth (files + all references)
-- [ ] **2.3** Remove StringSynth (files + all references)
-- [ ] **2.4** Update SynthType enum and SynthFactory
+### Phase 2: Remove Redundant Synths ✓
+- [x] **2.1** Remove PolyPadSynth (files + all references)
+- [x] **2.2** Remove OrganSynth (files + all references)
+- [x] **2.3** Remove StringSynth (files + all references)
+- [x] **2.4** Update SynthType enum and SynthFactory
 
-### Phase 3: FM Editor (Template)
-- [ ] **3.1** Refactor FMSynthEditor with CardPanel layout
-- [ ] **3.2** Test and polish FM editor
+### Phase 3: FM Editor (Template) ✓
+- [x] **3.1** Refactor FMSynthEditor with CardPanel layout
+- [x] **3.2** Test and polish FM editor
+- [x] **3.3** Add descriptive tooltips to all knobs
+- [x] **3.4** Add resizable bottom panel with drag handle
 
-### Phase 4: Other Synth Editors
-- [ ] **4.1** AnalogSynthEditor redesign
-- [ ] **4.2** ProSynthEditor redesign
-- [ ] **4.3** DrumSynthEditor redesign
-- [ ] **4.4** SamplerEditor redesign
-- [ ] **4.5** SoundFontPlayerEditor redesign
+### Phase 4: Other Synth Editors ✓
+- [x] **4.1** AnalogSynthEditor redesign
+- [x] **4.2** ProSynthEditor redesign
+- [x] **4.3** DrumSynthEditor redesign
+- [x] **4.4** SamplerEditor redesign
+- [x] **4.5** SoundFontPlayerEditor redesign
 
-### Phase 5: Main Panels
-- [ ] **5.1** Track List panel redesign
-- [ ] **5.2** Transport bar redesign
-- [ ] **5.3** Mixer panel redesign
-- [ ] **5.4** Timeline/Arrangement polish
+### Phase 5: Main Panels ✓
+- [x] **5.1** Track List panel redesign
+- [x] **5.2** Transport bar redesign
+- [x] **5.3** Mixer panel redesign
+- [x] **5.4** Timeline/Arrangement polish
 
-### Phase 6: Final Polish
-- [ ] **6.1** Consistent spacing/alignment pass
-- [ ] **6.2** Hover/focus states everywhere
-- [ ] **6.3** Final testing
+### Phase 6: Final Polish ✓
+- [x] **6.1** Consistent spacing/alignment pass
+- [x] **6.2** Hover/focus states everywhere
+- [x] **6.3** Final testing (56,309 tests passed)
 
 ---
 
 ## Backlog (After UI Redesign)
 
 ### Critical Fixes
-- [ ] Add project rename UI
-- [ ] Test save/load (Cmd+S, Cmd+O)
-- [ ] Fix "Untitled *" dirty state display
+- [x] Add project rename UI (click project name to rename)
+- [x] Fix "Untitled *" dirty state display
+- [x] Fix record button (arms tracks + starts playback with count-in)
 - [ ] Bundle default SoundFont (.sf2)
 
 ### Missing Keyboard Shortcuts
-- [ ] Select All (Cmd+A)
-- [ ] Loop toggle (L key)
-- [ ] Clip navigation ([ and ] keys)
+- [x] Select All (Cmd+A) - already implemented
+- [x] Loop toggle (L key) - already implemented
+- [x] Clip navigation ([ and ] keys) - already implemented
 
 ### Code Cleanup
-- [ ] Remove DBG() statements from production code
+- [x] Remove DBG() statements from main files
 
 ---
 
@@ -68,3 +70,9 @@ FabFilter-inspired professional dark theme with purple accents. See `docs/plans/
 - [x] CLAUDE.md created
 - [x] Initial UI redesign plan (ProgFlow Modern) - superseded by Saturn
 - [x] Saturn UI redesign plan finalized
+- [x] **Phase 1: Foundation** - Saturn colors, knob redesign, CardPanel, ComboBox styling, S/M/R buttons
+- [x] **Phase 2: Remove Synths** - Removed PolyPad, Organ, String synths (now 6 synths total)
+- [x] **Phase 3: FM Editor** - Refactored with CardPanel layout, tooltips, resizable panel
+- [x] **Phase 4: Other Synth Editors** - Redesigned Analog, Pro, Drum, Sampler, SoundFont editors with CardPanel layout and tooltips
+- [x] **Phase 5: Main Panels** - Redesigned Track List, Transport bar, Mixer, Timeline with Saturn styling
+- [x] **Phase 6: Final Polish** - Consistent spacing, hover/focus states, 56,309 tests passing

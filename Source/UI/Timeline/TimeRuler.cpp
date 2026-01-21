@@ -52,8 +52,14 @@ void TimeRuler::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
 
-    // Background
-    g.setColour(ProgFlowColours::bgSecondary());
+    // Saturn design: subtle gradient background
+    juce::ColourGradient gradient(
+        ProgFlowColours::bgSecondary(),
+        0.0f, 0.0f,
+        ProgFlowColours::bgPrimary(),
+        0.0f, static_cast<float>(bounds.getHeight()),
+        false);
+    g.setGradientFill(gradient);
     g.fillRect(bounds);
 
     // Draw loop region if enabled (behind everything else)
@@ -62,8 +68,8 @@ void TimeRuler::paint(juce::Graphics& g)
         drawLoopRegion(g);
     }
 
-    // Bottom border
-    g.setColour(ProgFlowColours::bgTertiary());
+    // Bottom border (Saturn accent)
+    g.setColour(ProgFlowColours::border());
     g.drawHorizontalLine(bounds.getHeight() - 1, 0.0f, static_cast<float>(bounds.getWidth()));
 
     // Calculate visible bar range
@@ -164,12 +170,12 @@ void TimeRuler::drawLoopRegion(juce::Graphics& g)
 
     if (endX <= startX) return;  // Loop region not visible
 
-    // Draw loop region background
-    g.setColour(juce::Colour(0x30FFD700));  // Semi-transparent gold
+    // Draw loop region background (Saturn: gold/orange accent)
+    g.setColour(ProgFlowColours::accentOrange().withAlpha(0.2f));
     g.fillRect(startX, 0, endX - startX, bounds.getHeight());
 
     // Draw loop markers (vertical lines at start and end)
-    g.setColour(juce::Colour(0xFFFFD700));  // Solid gold
+    g.setColour(ProgFlowColours::accentOrange());
 
     // Start marker
     int actualStartX = static_cast<int>((loopStartBar - scrollOffset) * barWidth);

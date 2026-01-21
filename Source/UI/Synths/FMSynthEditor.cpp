@@ -1,71 +1,117 @@
 #include "FMSynthEditor.h"
 
 FMSynthEditor::FMSynthEditor(FMSynth& s)
-    : SynthEditorBase(), synth(s), rowDividerY(0)
+    : SynthEditorBase(), synth(s)
 {
     // Setup preset selector and master volume (from base class)
     presetSelector.addListener(this);
     populatePresets();
-    setupKnob(masterVolume, "volume", "Volume");
+    setupKnob(masterVolume, "volume", "Volume", "", "Master output volume");
 
     //==========================================================================
-    // ALGORITHM & OPERATORS SECTION
+    // CARD PANELS (Saturn design)
     //==========================================================================
 
-    // Algorithm
-    createSectionLabel(algorithmLabel, "ALGORITHM");
-    addAndMakeVisible(algorithmLabel);
+    // Add all card panels (no headers, compact padding)
+    algorithmCard.setShowHeader(false);
+    algorithmCard.setPadding(6);
+    addAndMakeVisible(algorithmCard);
+
+    carrierCard.setShowHeader(false);
+    carrierCard.setPadding(6);
+    addAndMakeVisible(carrierCard);
+
+    mod1Card.setShowHeader(false);
+    mod1Card.setPadding(6);
+    addAndMakeVisible(mod1Card);
+
+    mod2Card.setShowHeader(false);
+    mod2Card.setPadding(6);
+    addAndMakeVisible(mod2Card);
+
+    feedbackCard.setShowHeader(false);
+    feedbackCard.setPadding(6);
+    addAndMakeVisible(feedbackCard);
+
+    envelopesCard.setShowHeader(false);
+    envelopesCard.setPadding(6);
+    addAndMakeVisible(envelopesCard);
+
+    //==========================================================================
+    // ALGORITHM CARD
+    //==========================================================================
     setupComboBox(algorithmSelector, "algorithm");
-
-    // Carrier
-    createSectionLabel(carrierLabel, "CARRIER");
-    addAndMakeVisible(carrierLabel);
-    setupKnob(carrierRatio, "carrier_ratio", "Ratio");
-
-    // Modulator 1
-    createSectionLabel(mod1Label, "MODULATOR 1");
-    addAndMakeVisible(mod1Label);
-    setupKnob(mod1Ratio, "mod1_ratio", "Ratio");
-    setupKnob(mod1Index, "mod1_index", "Index");
-
-    // Modulator 2
-    createSectionLabel(mod2Label, "MODULATOR 2");
-    addAndMakeVisible(mod2Label);
-    setupKnob(mod2Ratio, "mod2_ratio", "Ratio");
-    setupKnob(mod2Index, "mod2_index", "Index");
+    algorithmCard.addAndMakeVisible(algorithmSelector);
 
     //==========================================================================
-    // FEEDBACK & ENVELOPES SECTION
+    // CARRIER CARD
+    //==========================================================================
+    setupKnob(carrierRatio, "carrier_ratio", "Ratio", "", "Carrier frequency ratio (multiplier of base pitch)");
+    carrierCard.addAndMakeVisible(carrierRatio);
+
+    //==========================================================================
+    // MODULATOR 1 CARD
+    //==========================================================================
+    setupKnob(mod1Ratio, "mod1_ratio", "Ratio", "", "Modulator 1 frequency ratio");
+    setupKnob(mod1Index, "mod1_index", "Index", "", "Modulator 1 depth - higher values add more harmonics");
+    mod1Card.addAndMakeVisible(mod1Ratio);
+    mod1Card.addAndMakeVisible(mod1Index);
+
+    //==========================================================================
+    // MODULATOR 2 CARD
+    //==========================================================================
+    setupKnob(mod2Ratio, "mod2_ratio", "Ratio", "", "Modulator 2 frequency ratio");
+    setupKnob(mod2Index, "mod2_index", "Index", "", "Modulator 2 depth - higher values add more harmonics");
+    mod2Card.addAndMakeVisible(mod2Ratio);
+    mod2Card.addAndMakeVisible(mod2Index);
+
+    //==========================================================================
+    // FEEDBACK CARD
+    //==========================================================================
+    setupKnob(feedbackKnob, "feedback", "Amount", "", "Operator self-modulation - adds metallic/harsh tones");
+    feedbackCard.addAndMakeVisible(feedbackKnob);
+
+    //==========================================================================
+    // ENVELOPES CARD
     //==========================================================================
 
-    // Feedback
-    createSectionLabel(feedbackLabel, "FEEDBACK");
-    addAndMakeVisible(feedbackLabel);
-    setupKnob(feedbackKnob, "feedback", "Amount");
+    // Envelope sub-labels
+    createSectionLabel(ampEnvLabel, "AMP");
+    createSectionLabel(mod1EnvLabel, "MOD 1");
+    createSectionLabel(mod2EnvLabel, "MOD 2");
+    envelopesCard.addAndMakeVisible(ampEnvLabel);
+    envelopesCard.addAndMakeVisible(mod1EnvLabel);
+    envelopesCard.addAndMakeVisible(mod2EnvLabel);
 
-    // Amp Envelope
-    createSectionLabel(ampEnvLabel, "AMP ENV");
-    addAndMakeVisible(ampEnvLabel);
-    setupKnob(ampAttack, "amp_attack", "A", " s");
-    setupKnob(ampDecay, "amp_decay", "D", " s");
-    setupKnob(ampSustain, "amp_sustain", "S");
-    setupKnob(ampRelease, "amp_release", "R", " s");
+    // Amp Envelope knobs
+    setupKnob(ampAttack, "amp_attack", "A", "s", "Attack - time to reach full volume");
+    setupKnob(ampDecay, "amp_decay", "D", "s", "Decay - time to fall to sustain level");
+    setupKnob(ampSustain, "amp_sustain", "S", "", "Sustain - volume while key is held");
+    setupKnob(ampRelease, "amp_release", "R", "s", "Release - time to fade after key release");
+    envelopesCard.addAndMakeVisible(ampAttack);
+    envelopesCard.addAndMakeVisible(ampDecay);
+    envelopesCard.addAndMakeVisible(ampSustain);
+    envelopesCard.addAndMakeVisible(ampRelease);
 
-    // Mod 1 Envelope
-    createSectionLabel(mod1EnvLabel, "MOD 1 ENV");
-    addAndMakeVisible(mod1EnvLabel);
-    setupKnob(mod1Attack, "mod1_attack", "A", " s");
-    setupKnob(mod1Decay, "mod1_decay", "D", " s");
-    setupKnob(mod1Sustain, "mod1_sustain", "S");
-    setupKnob(mod1Release, "mod1_release", "R", " s");
+    // Mod 1 Envelope knobs
+    setupKnob(mod1Attack, "mod1_attack", "A", "s", "Mod 1 Attack - modulation intensity ramp-up time");
+    setupKnob(mod1Decay, "mod1_decay", "D", "s", "Mod 1 Decay - time to sustain level");
+    setupKnob(mod1Sustain, "mod1_sustain", "S", "", "Mod 1 Sustain - modulation level while held");
+    setupKnob(mod1Release, "mod1_release", "R", "s", "Mod 1 Release - modulation fade time");
+    envelopesCard.addAndMakeVisible(mod1Attack);
+    envelopesCard.addAndMakeVisible(mod1Decay);
+    envelopesCard.addAndMakeVisible(mod1Sustain);
+    envelopesCard.addAndMakeVisible(mod1Release);
 
-    // Mod 2 Envelope
-    createSectionLabel(mod2EnvLabel, "MOD 2 ENV");
-    addAndMakeVisible(mod2EnvLabel);
-    setupKnob(mod2Attack, "mod2_attack", "A", " s");
-    setupKnob(mod2Decay, "mod2_decay", "D", " s");
-    setupKnob(mod2Sustain, "mod2_sustain", "S");
-    setupKnob(mod2Release, "mod2_release", "R", " s");
+    // Mod 2 Envelope knobs
+    setupKnob(mod2Attack, "mod2_attack", "A", "s", "Mod 2 Attack - modulation intensity ramp-up time");
+    setupKnob(mod2Decay, "mod2_decay", "D", "s", "Mod 2 Decay - time to sustain level");
+    setupKnob(mod2Sustain, "mod2_sustain", "S", "", "Mod 2 Sustain - modulation level while held");
+    setupKnob(mod2Release, "mod2_release", "R", "s", "Mod 2 Release - modulation fade time");
+    envelopesCard.addAndMakeVisible(mod2Attack);
+    envelopesCard.addAndMakeVisible(mod2Decay);
+    envelopesCard.addAndMakeVisible(mod2Sustain);
+    envelopesCard.addAndMakeVisible(mod2Release);
 
     // Initial refresh
     refreshFromSynth();
@@ -78,10 +124,15 @@ FMSynthEditor::~FMSynthEditor()
 }
 
 void FMSynthEditor::setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                               const juce::String& label, const juce::String& suffix)
+                               const juce::String& label, const juce::String& suffix,
+                               const juce::String& description)
 {
     knob.setLabel(label);
     knob.setValueSuffix(suffix);
+
+    // Set descriptive tooltip if provided
+    if (description.isNotEmpty())
+        knob.setTooltipText(description);
 
     if (auto* param = synth.getParameterInfo(paramId))
     {
@@ -214,142 +265,109 @@ void FMSynthEditor::refreshFromSynth()
 
 void FMSynthEditor::layoutContent(juce::Rectangle<int> area)
 {
-    // Clear previous dividers
-    sectionDividers.clear();
+    const int cardGap = 6;
+    const int knobHeight = RotaryKnob::TOTAL_HEIGHT;  // 80px with value display
+    const int comboHeight = 28;
+    const int compactKnobHeight = 70;  // Slightly smaller for envelopes
 
-    const int labelHeight = 16;
-    const int comboHeight = 24;
-    const int labelGap = 6;
-    const int knobRowGap = 8;
+    // Two rows: Top (operators), Bottom (envelopes)
+    int availableHeight = area.getHeight();
+    int rowHeight = (availableHeight - cardGap) / 2;
 
-    // Two rows with horizontal divider
-    // Row 1: 50% - ALGORITHM (20%) | CARRIER (20%) | MOD 1 (20%) | MOD 2 (20%) | FEEDBACK (20%)
-    // Row 2: 50% - AMP ENV (33%) | MOD 1 ENV (33%) | MOD 2 ENV (34%)
-
-    int row1Height = area.getHeight() / 2;
-    int row2Height = area.getHeight() - row1Height;
-
-    auto row1Area = area.removeFromTop(row1Height);
-    rowDividerY = row1Area.getBottom();
-    auto row2Area = area;
+    auto topRow = area.removeFromTop(rowHeight);
+    area.removeFromTop(cardGap);
+    auto bottomRow = area;
 
     //==========================================================================
-    // ROW 1: Algorithm, Carrier, Modulators, Feedback
+    // TOP ROW: Algorithm, Carrier, Mod1, Mod2, Feedback - all in one row
     //==========================================================================
     {
-        const int totalWidth = row1Area.getWidth();
-        const int algorithmWidth = totalWidth * 20 / 100;
-        const int carrierWidth = totalWidth * 20 / 100;
-        const int mod1Width = totalWidth * 20 / 100;
-        const int mod2Width = totalWidth * 20 / 100;
-        const int feedbackWidth = totalWidth - algorithmWidth - carrierWidth - mod1Width - mod2Width;
+        int totalWidth = topRow.getWidth();
+        // Give more space to modulator cards since they have 2 knobs
+        int smallCardWidth = (totalWidth - cardGap * 4) / 6;  // Algorithm, Carrier, Feedback
+        int largeCardWidth = smallCardWidth * 3 / 2;          // Mod1, Mod2
 
-        auto layoutRow = row1Area;
+        // Algorithm card
+        auto algBounds = topRow.removeFromLeft(smallCardWidth);
+        algorithmCard.setBounds(algBounds);
+        auto algContent = algorithmCard.getContentArea();
+        algorithmSelector.setBounds(algContent.withTrimmedTop((algContent.getHeight() - comboHeight) / 2)
+                                              .removeFromTop(comboHeight));
 
-        // Algorithm
-        {
-            auto section = layoutRow.removeFromLeft(algorithmWidth).reduced(SECTION_PADDING, 0);
-            algorithmLabel.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap);
-            algorithmSelector.setBounds(section.removeFromTop(comboHeight));
-        }
-        sectionDividers.push_back(layoutRow.getX());
+        topRow.removeFromLeft(cardGap);
 
-        // Carrier
-        {
-            auto section = layoutRow.removeFromLeft(carrierWidth).reduced(SECTION_PADDING, 0);
-            carrierLabel.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap + comboHeight + knobRowGap); // Align with algorithm
-            carrierRatio.setBounds(section.removeFromTop(KNOB_SIZE + 20).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-        }
-        sectionDividers.push_back(layoutRow.getX());
+        // Carrier card
+        auto carrierBounds = topRow.removeFromLeft(smallCardWidth);
+        carrierCard.setBounds(carrierBounds);
+        auto carrierContent = carrierCard.getContentArea();
+        carrierRatio.setBounds(carrierContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
 
-        // Modulator 1
-        {
-            auto section = layoutRow.removeFromLeft(mod1Width).reduced(SECTION_PADDING, 0);
-            mod1Label.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap + comboHeight + knobRowGap); // Align with algorithm
+        topRow.removeFromLeft(cardGap);
 
-            auto knobRow = section.removeFromTop(KNOB_SIZE + 20);
-            int knobSpacing = knobRow.getWidth() / 2;
-            mod1Ratio.setBounds(knobRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-            mod1Index.setBounds(knobRow.withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-        }
-        sectionDividers.push_back(layoutRow.getX());
+        // Mod 1 card
+        auto mod1Bounds = topRow.removeFromLeft(largeCardWidth);
+        mod1Card.setBounds(mod1Bounds);
+        auto mod1Content = mod1Card.getContentArea();
+        int knobSpacing = mod1Content.getWidth() / 2;
+        mod1Ratio.setBounds(mod1Content.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        mod1Index.setBounds(mod1Content.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
 
-        // Modulator 2
-        {
-            auto section = layoutRow.removeFromLeft(mod2Width).reduced(SECTION_PADDING, 0);
-            mod2Label.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap + comboHeight + knobRowGap); // Align with algorithm
+        topRow.removeFromLeft(cardGap);
 
-            auto knobRow = section.removeFromTop(KNOB_SIZE + 20);
-            int knobSpacing = knobRow.getWidth() / 2;
-            mod2Ratio.setBounds(knobRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-            mod2Index.setBounds(knobRow.withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-        }
-        sectionDividers.push_back(layoutRow.getX());
+        // Mod 2 card
+        auto mod2Bounds = topRow.removeFromLeft(largeCardWidth);
+        mod2Card.setBounds(mod2Bounds);
+        auto mod2Content = mod2Card.getContentArea();
+        knobSpacing = mod2Content.getWidth() / 2;
+        mod2Ratio.setBounds(mod2Content.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        mod2Index.setBounds(mod2Content.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
 
-        // Feedback
-        {
-            auto section = layoutRow.removeFromLeft(feedbackWidth).reduced(SECTION_PADDING, 0);
-            feedbackLabel.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap + comboHeight + knobRowGap); // Align with algorithm
-            feedbackKnob.setBounds(section.removeFromTop(KNOB_SIZE + 20).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-        }
+        topRow.removeFromLeft(cardGap);
+
+        // Feedback card
+        auto feedbackBounds = topRow;
+        feedbackCard.setBounds(feedbackBounds);
+        auto feedbackContent = feedbackCard.getContentArea();
+        feedbackKnob.setBounds(feedbackContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
     }
 
     //==========================================================================
-    // ROW 2: Envelopes
+    // BOTTOM ROW: Envelopes card spanning full width
     //==========================================================================
     {
-        const int totalWidth = row2Area.getWidth();
-        const int ampEnvWidth = totalWidth * 33 / 100;
-        const int mod1EnvWidth = totalWidth * 33 / 100;
-        const int mod2EnvWidth = totalWidth - ampEnvWidth - mod1EnvWidth;
+        envelopesCard.setBounds(bottomRow);
+        auto envContent = envelopesCard.getContentArea();
 
-        auto layoutRow = row2Area;
+        // Layout 3 envelope groups horizontally, all in one row
+        int envGroupWidth = envContent.getWidth() / 3;
+        const int labelHeight = 14;
+        const int labelGap = 2;
 
-        // Helper for envelope sections (4 knobs each)
-        auto layoutEnvelope = [&](juce::Label& label, RotaryKnob& a, RotaryKnob& d,
-                                   RotaryKnob& s, RotaryKnob& r, int width)
+        auto layoutEnvGroup = [&](juce::Label& label, RotaryKnob& a, RotaryKnob& d,
+                                   RotaryKnob& s, RotaryKnob& r, juce::Rectangle<int> bounds)
         {
-            auto section = layoutRow.removeFromLeft(width).reduced(SECTION_PADDING, 0);
-            label.setBounds(section.removeFromTop(labelHeight));
-            section.removeFromTop(labelGap);
+            // Label at top
+            label.setBounds(bounds.removeFromTop(labelHeight));
+            bounds.removeFromTop(labelGap);
 
-            auto knobRow = section.removeFromTop(KNOB_SIZE + 20);
-            int knobSpacing = knobRow.getWidth() / 4;
-            a.setBounds(knobRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-            d.setBounds(knobRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-            s.setBounds(knobRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-            r.setBounds(knobRow.withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE + 20));
-
-            sectionDividers.push_back(layoutRow.getX());
+            // 4 knobs in a row
+            int knobWidth = bounds.getWidth() / 4;
+            a.setBounds(bounds.removeFromLeft(knobWidth).withSizeKeepingCentre(KNOB_SIZE, compactKnobHeight));
+            d.setBounds(bounds.removeFromLeft(knobWidth).withSizeKeepingCentre(KNOB_SIZE, compactKnobHeight));
+            s.setBounds(bounds.removeFromLeft(knobWidth).withSizeKeepingCentre(KNOB_SIZE, compactKnobHeight));
+            r.setBounds(bounds.withSizeKeepingCentre(KNOB_SIZE, compactKnobHeight));
         };
 
-        layoutEnvelope(ampEnvLabel, ampAttack, ampDecay, ampSustain, ampRelease, ampEnvWidth);
-        layoutEnvelope(mod1EnvLabel, mod1Attack, mod1Decay, mod1Sustain, mod1Release, mod1EnvWidth);
-        layoutEnvelope(mod2EnvLabel, mod2Attack, mod2Decay, mod2Sustain, mod2Release, mod2EnvWidth);
+        layoutEnvGroup(ampEnvLabel, ampAttack, ampDecay, ampSustain, ampRelease,
+                       envContent.removeFromLeft(envGroupWidth));
+        layoutEnvGroup(mod1EnvLabel, mod1Attack, mod1Decay, mod1Sustain, mod1Release,
+                       envContent.removeFromLeft(envGroupWidth));
+        layoutEnvGroup(mod2EnvLabel, mod2Attack, mod2Decay, mod2Sustain, mod2Release,
+                       envContent);
     }
 }
 
-void FMSynthEditor::drawDividers(juce::Graphics& g, juce::Rectangle<int> area)
+void FMSynthEditor::drawDividers(juce::Graphics& /*g*/, juce::Rectangle<int> /*area*/)
 {
-    // Draw horizontal divider between rows
-    drawHorizontalDivider(g, area.getX(), area.getRight(), rowDividerY);
-
-    // Draw vertical dividers between sections
-    // Skip last 3 dividers as they're from row 2 and shouldn't extend to full height
-    int row1Dividers = 4; // ALGORITHM | CARRIER | MOD1 | MOD2 | FEEDBACK
-    for (int i = 0; i < row1Dividers && i < static_cast<int>(sectionDividers.size()); i++)
-    {
-        drawVerticalDivider(g, sectionDividers[i], area.getY(), rowDividerY);
-    }
-
-    // Draw row 2 dividers (only below horizontal divider)
-    for (size_t i = row1Dividers; i < sectionDividers.size(); i++)
-    {
-        drawVerticalDivider(g, sectionDividers[i], rowDividerY, area.getBottom());
-    }
+    // No dividers needed - CardPanels handle their own styling
 }

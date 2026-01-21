@@ -110,6 +110,11 @@ public:
      */
     bool isNoteActive(int midiNote) const;
 
+    /**
+     * Get the MIDI note assigned to a specific pad
+     */
+    int getPadMidiNote(int padIndex) const;
+
     //==========================================================================
     // Kit management
 

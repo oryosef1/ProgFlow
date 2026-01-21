@@ -26,17 +26,24 @@ public:
     void setAudioDeviceManager(juce::AudioDeviceManager* manager) { deviceManager = manager; }
 
     // Set project name for display
-    void setProjectName(const juce::String& name) { projectName = name; repaint(); }
-    void setProjectDirty(bool dirty) { projectDirty = dirty; repaint(); }
+    void setProjectName(const juce::String& name);
+    void setProjectDirty(bool dirty) { projectDirty = dirty; setProjectName(projectName); }
+
+    // Callback for project rename
+    std::function<void(const juce::String&)> onProjectRename;
 
     // Tap tempo (callable from keyboard shortcut)
     void tap() { tapTempoClicked(); }
+
+    // Callback for navigating to project selection
+    std::function<void()> onBackToProjectSelection;
 
     ~TransportBar() override;
 
     void paint(juce::Graphics& g) override;
     void paintOverChildren(juce::Graphics& g) override;
     void resized() override;
+    void mouseDown(const juce::MouseEvent& e) override;
 
 private:
     void timerCallback() override;
@@ -49,6 +56,9 @@ private:
 
     // Update position display
     void updatePositionDisplay();
+
+    // Draw meter helper
+    void drawMeter(juce::Graphics& g, int x, int y, int width, int height, float level, float peak);
 
     AudioEngine& audioEngine;
 
@@ -92,9 +102,14 @@ private:
     float cpuUsage = 0.0f;
     juce::Label cpuLabel{"cpuLabel", "CPU: 0%"};
 
+    // Home button (back to project selection)
+    juce::TextButton homeButton;
+
     // Project info
     juce::String projectName = "Untitled";
     bool projectDirty = false;
+    juce::Label projectNameLabel;
+    void showRenameDialog();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TransportBar)
 };

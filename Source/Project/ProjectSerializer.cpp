@@ -59,17 +59,12 @@ bool ProjectSerializer::deserialize(const juce::String& jsonString, ProjectData&
 
     if (!parsed.isObject())
     {
-        DBG("ProjectSerializer: Failed to parse JSON");
         return false;
     }
 
     // Version check
     outProject.version = parsed.getProperty("version", 1);
-    if (outProject.version > CURRENT_VERSION)
-    {
-        DBG("ProjectSerializer: File version " << outProject.version << " is newer than supported " << CURRENT_VERSION);
-        // Continue anyway, might still work
-    }
+    // Note: Continue even if version is newer, might still work
 
     outProject.name = parsed.getProperty("name", "Untitled").toString();
     outProject.bpm = static_cast<double>(parsed.getProperty("bpm", 120.0));

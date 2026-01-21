@@ -30,6 +30,7 @@ public:
     // Callbacks
     std::function<void(Track*)> onTrackSelected;
     std::function<void()> onTracksChanged;  // Called when tracks are added/removed
+    std::function<void()> onBackToProjectSelection;  // Called to go back to welcome screen
 
     // Get currently selected track
     Track* getSelectedTrack() const { return selectedTrack; }
@@ -52,12 +53,15 @@ private:
     VerticalMeter masterMeterR;
     juce::Label masterLabel{"master", "Master"};
 
+    // Home button to go back to project selection
+    juce::TextButton homeButton;
+
     void selectTrack(Track* track);
     void addNewTrack();
     void deleteTrack(Track* track);
 
     static constexpr int headerHeight = 30;  // Must match TimelinePanel::RULER_HEIGHT for alignment
-    static constexpr int masterHeight = 60;
+    static constexpr int masterHeight = 80;  // Includes home button
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackHeaderPanel)
 };

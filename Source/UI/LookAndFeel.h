@@ -13,13 +13,17 @@ namespace ProgFlowSpacing
     static constexpr int LG = 16;
     static constexpr int XL = 24;
 
-    // Component sizes - Modern design
-    static constexpr int KNOB_SIZE = 52;           // Modern knob diameter
-    static constexpr int KNOB_WITH_LABEL = 76;     // Knob + gap + label
+    // Component sizes - Saturn design
+    static constexpr int KNOB_SIZE = 48;           // Saturn knob diameter
+    static constexpr int KNOB_WITH_LABEL = 80;     // Knob + gap + label + value
     static constexpr int SECTION_HEADER_HEIGHT = 20;
     static constexpr int COMBO_HEIGHT = 28;
     static constexpr int DIVIDER_WIDTH = 1;
     static constexpr int RESIZE_HANDLE = 4;        // Drag handle thickness
+
+    // Card panel (Saturn design)
+    static constexpr int CARD_CORNER_RADIUS = 6;
+    static constexpr int CARD_PADDING = 12;
 
     // Glass panel
     static constexpr int GLASS_CORNER_RADIUS = 8;
@@ -29,10 +33,10 @@ namespace ProgFlowSpacing
     static constexpr int HEADER_HEIGHT = 44;
 
     // Legacy (keep for compatibility)
-    static constexpr int KNOB_MIN_SIZE = 52;
-    static constexpr int KNOB_PREFERRED = 52;
-    static constexpr int SECTION_CORNER_RADIUS = 8;
-    static constexpr int BUTTON_CORNER_RADIUS = 6;
+    static constexpr int KNOB_MIN_SIZE = 48;
+    static constexpr int KNOB_PREFERRED = 48;
+    static constexpr int SECTION_CORNER_RADIUS = 6;
+    static constexpr int BUTTON_CORNER_RADIUS = 4;
 }
 
 /**

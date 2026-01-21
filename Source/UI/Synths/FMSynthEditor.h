@@ -2,19 +2,23 @@
 
 #include "SynthEditorBase.h"
 #include "../../Audio/Synths/FMSynth.h"
+#include "../Common/CardPanel.h"
 
 /**
  * FMSynthEditor - Full UI panel for editing FMSynth parameters
  *
- * Layout:
+ * Saturn UI Layout with CardPanels:
  * ┌─────────────────────────────────────────────────────────────────┐
  * │ [Preset Dropdown]                               [Master Volume] │
  * ├─────────────────────────────────────────────────────────────────┤
- * │  ALGORITHM  │  CARRIER   │  MODULATOR 1  │  MODULATOR 2  │ FEEDBACK │
- * │  [Dropdown] │  Ratio     │  Ratio  Index │  Ratio  Index │  [Knob]  │
- * ├─────────────────────────────────────────────────────────────────┤
- * │  AMP ENV        │  MOD 1 ENV      │  MOD 2 ENV                  │
- * │  A  D  S  R     │  A  D  S  R     │  A  D  S  R                 │
+ * │  ╭───────────╮ ╭─────────╮ ╭───────────╮ ╭───────────╮         │
+ * │  │ ALGORITHM │ │ CARRIER │ │MODULATOR 1│ │MODULATOR 2│         │
+ * │  │ [▼ Serial]│ │ [Ratio] │ │[Rat][Idx] │ │[Rat][Idx] │         │
+ * │  ╰───────────╯ ╰─────────╯ ╰───────────╯ ╰───────────╯         │
+ * │  ╭─────────╮ ╭─────────────────────────────────────────────────╮│
+ * │  │FEEDBACK │ │                  ENVELOPES                      ││
+ * │  │ [Knob]  │ │  AMP [ADSR]    MOD 1 [ADSR]    MOD 2 [ADSR]    ││
+ * │  ╰─────────╯ ╰─────────────────────────────────────────────────╯│
  * └─────────────────────────────────────────────────────────────────┘
  */
 class FMSynthEditor : public SynthEditorBase
@@ -34,14 +38,16 @@ private:
     FMSynth& synth;
 
     //==========================================================================
-    // Section Labels
-    juce::Label algorithmLabel;
-    juce::Label carrierLabel, mod1Label, mod2Label;
-    juce::Label feedbackLabel, ampEnvLabel, mod1EnvLabel, mod2EnvLabel;
+    // Card Panels (Saturn design)
+    CardPanel algorithmCard{"ALGORITHM"};
+    CardPanel carrierCard{"CARRIER"};
+    CardPanel mod1Card{"MODULATOR 1"};
+    CardPanel mod2Card{"MODULATOR 2"};
+    CardPanel feedbackCard{"FEEDBACK"};
+    CardPanel envelopesCard{"ENVELOPES"};
 
-    // Divider positions for drawing
-    std::vector<int> sectionDividers;
-    int rowDividerY;
+    // Envelope sub-labels (inside envelopes card)
+    juce::Label ampEnvLabel, mod1EnvLabel, mod2EnvLabel;
 
     //==========================================================================
     // Algorithm
@@ -78,7 +84,8 @@ private:
     //==========================================================================
     // Helper methods
     void setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                   const juce::String& label, const juce::String& suffix = "");
+                   const juce::String& label, const juce::String& suffix = "",
+                   const juce::String& description = "");
     void setupComboBox(juce::ComboBox& box, const juce::String& paramId);
 
     // ComboBox::Listener

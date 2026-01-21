@@ -5,55 +5,55 @@
 
 ThemeManager::ThemeManager()
 {
-    // Dark theme (default) - Modern design with depth and glow
-    // Backgrounds (subtle blue-black for depth)
-    darkScheme.bgPrimary     = juce::Colour(0xff0d1117);  // Deep background
-    darkScheme.bgSecondary   = juce::Colour(0xff161b22);  // Panel backgrounds
-    darkScheme.bgTertiary    = juce::Colour(0xff1f2428);  // Hover states
-    darkScheme.bgHover       = juce::Colour(0xff2d333b);
-    darkScheme.sectionBg     = juce::Colour(0xff21262d);  // Section backgrounds
-    darkScheme.surfaceBg     = juce::Colour(0xff1c2128);  // Raised surfaces
-    darkScheme.dividerLine   = juce::Colour(0xff30363d);  // Thin dividers
+    // Dark theme (default) - Saturn UI: FabFilter-inspired professional dark with purple accents
+    // Backgrounds (warm dark, not pure black)
+    darkScheme.bgPrimary     = juce::Colour(0xff1a1a1f);  // Deep background
+    darkScheme.bgSecondary   = juce::Colour(0xff232328);  // Panel backgrounds
+    darkScheme.bgTertiary    = juce::Colour(0xff2a2a30);  // Raised surfaces/cards
+    darkScheme.bgHover       = juce::Colour(0xff35353d);  // Hover states
+    darkScheme.sectionBg     = juce::Colour(0xff232328);  // Section backgrounds
+    darkScheme.surfaceBg     = juce::Colour(0xff2a2a30);  // Raised surfaces
+    darkScheme.dividerLine   = juce::Colour(0xff3a3a42);  // Thin dividers
 
     // Glass effect
-    darkScheme.glassOverlay  = juce::Colour(0x18ffffff);  // 10% white
-    darkScheme.glassHover    = juce::Colour(0x22ffffff);  // 13% white
-    darkScheme.glassBorder   = juce::Colour(0x20ffffff);  // Subtle border
+    darkScheme.glassOverlay  = juce::Colour(0x0dffffff);  // 5% white (subtle)
+    darkScheme.glassHover    = juce::Colour(0x15ffffff);  // 8% white
+    darkScheme.glassBorder   = juce::Colour(0x0dffffff);  // Very subtle border
 
-    // Accents (vibrant)
-    darkScheme.accentBlue    = juce::Colour(0xff4C9EFF);  // Electric blue
-    darkScheme.accentGreen   = juce::Colour(0xff3DDC84);  // Vibrant green
-    darkScheme.accentOrange  = juce::Colour(0xffFFAB40);  // Warm orange
-    darkScheme.accentRed     = juce::Colour(0xffFF5252);  // Bright red
+    // Accents - Saturn purple primary, semantic colors for states
+    darkScheme.accentBlue    = juce::Colour(0xff9d7cd8);  // Saturn purple (primary accent)
+    darkScheme.accentGreen   = juce::Colour(0xff7dcfff);  // Cyan (play, solo, positive)
+    darkScheme.accentOrange  = juce::Colour(0xffe0af68);  // Gold (mute, warning)
+    darkScheme.accentRed     = juce::Colour(0xfff7768e);  // Coral (record, errors)
 
     // Glow variants (25% opacity for bloom)
-    darkScheme.glowBlue      = juce::Colour(0x404C9EFF);
-    darkScheme.glowGreen     = juce::Colour(0x403DDC84);
-    darkScheme.glowOrange    = juce::Colour(0x40FFAB40);
-    darkScheme.glowRed       = juce::Colour(0x40FF5252);
+    darkScheme.glowBlue      = juce::Colour(0x409d7cd8);  // Purple glow
+    darkScheme.glowGreen     = juce::Colour(0x407dcfff);  // Cyan glow
+    darkScheme.glowOrange    = juce::Colour(0x40e0af68);  // Gold glow
+    darkScheme.glowRed       = juce::Colour(0x40f7768e);  // Coral glow
 
-    // Knob colors
-    darkScheme.knobBody      = juce::Colour(0xff2a2f38);  // Knob background
-    darkScheme.knobBodyLight = juce::Colour(0xff3a4048);  // Gradient light
-    darkScheme.knobArcBg     = juce::Colour(0xff3a3f48);  // Inactive arc
+    // Knob colors (metallic gradient)
+    darkScheme.knobBody      = juce::Colour(0xff2d2d35);  // Knob background
+    darkScheme.knobBodyLight = juce::Colour(0xff3d3d45);  // Gradient highlight
+    darkScheme.knobArcBg     = juce::Colour(0xff3a3a42);  // Inactive arc
     darkScheme.knobIndicator = juce::Colour(0xffffffff);  // Position indicator
 
-    // Text
-    darkScheme.textPrimary   = juce::Colour(0xffffffff);
-    darkScheme.textSecondary = juce::Colour(0xffb0b0b0);
-    darkScheme.textMuted     = juce::Colour(0xff6e7681);  // Section headers
-    darkScheme.textDisabled  = juce::Colour(0xff484f58);
+    // Text (softer than pure white)
+    darkScheme.textPrimary   = juce::Colour(0xffe0e0e0);  // Main text
+    darkScheme.textSecondary = juce::Colour(0xff888890);  // Labels
+    darkScheme.textMuted     = juce::Colour(0xff5a5a62);  // Section headers
+    darkScheme.textDisabled  = juce::Colour(0xff404048);
 
     // Borders
-    darkScheme.border        = juce::Colour(0xff30363d);
-    darkScheme.borderLight   = juce::Colour(0xff3a4048);
-    darkScheme.borderGlow    = juce::Colour(0x404C9EFF);  // Glowing border
+    darkScheme.border        = juce::Colour(0xff3a3a42);
+    darkScheme.borderLight   = juce::Colour(0xff454550);
+    darkScheme.borderGlow    = juce::Colour(0x409d7cd8);  // Purple glowing border
 
-    // Meters
-    darkScheme.meterGreen    = juce::Colour(0xff3DDC84);
-    darkScheme.meterYellow   = juce::Colour(0xffFFAB40);
-    darkScheme.meterRed      = juce::Colour(0xffFF5252);
-    darkScheme.meterBg       = juce::Colour(0xff0d1117);
+    // Meters (LED-style gradient)
+    darkScheme.meterGreen    = juce::Colour(0xff7dcfff);  // Cyan
+    darkScheme.meterYellow   = juce::Colour(0xffe0af68);  // Gold
+    darkScheme.meterRed      = juce::Colour(0xfff7768e);  // Coral
+    darkScheme.meterBg       = juce::Colour(0xff1a1a1f);
 
     // Light theme (updated to match modern style)
     lightScheme.bgPrimary     = juce::Colour(0xfff6f8fa);
@@ -375,28 +375,41 @@ void ProgFlowLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
 }
 
 void ProgFlowLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height,
-                                        bool /*isButtonDown*/, int /*buttonX*/, int /*buttonY*/,
+                                        bool isButtonDown, int /*buttonX*/, int /*buttonY*/,
                                         int /*buttonW*/, int /*buttonH*/,
                                         juce::ComboBox& box)
 {
     auto bounds = juce::Rectangle<int>(0, 0, width, height).toFloat().reduced(1.0f);
     auto cornerSize = 4.0f;
+    bool hasFocus = box.hasKeyboardFocus(true);
+    bool isOpen = box.isPopupActive();
 
-    // Background
-    g.setColour(box.findColour(juce::ComboBox::backgroundColourId));
+    // Background - use surface color
+    g.setColour(ProgFlowColours::surfaceBg());
     g.fillRoundedRectangle(bounds, cornerSize);
 
-    // Border
-    g.setColour(box.findColour(juce::ComboBox::outlineColourId));
-    g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+    // Border - purple when focused or open, subtle otherwise
+    if (hasFocus || isOpen || isButtonDown)
+    {
+        g.setColour(ProgFlowColours::accentBlue());  // Purple accent
+        g.drawRoundedRectangle(bounds, cornerSize, 1.5f);
+    }
+    else
+    {
+        g.setColour(ProgFlowColours::border());
+        g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+    }
 
-    // Arrow
-    auto arrowZone = juce::Rectangle<float>(static_cast<float>(width) - 20.0f, 0.0f, 15.0f, static_cast<float>(height));
-    juce::Path arrow;
-    arrow.addTriangle(arrowZone.getCentreX() - 4.0f, arrowZone.getCentreY() - 2.0f,
-                      arrowZone.getCentreX() + 4.0f, arrowZone.getCentreY() - 2.0f,
-                      arrowZone.getCentreX(), arrowZone.getCentreY() + 3.0f);
+    // Chevron arrow (more modern than triangle)
+    auto arrowZone = juce::Rectangle<float>(static_cast<float>(width) - 22.0f, 0.0f, 18.0f, static_cast<float>(height));
+    auto arrowCentreX = arrowZone.getCentreX();
+    auto arrowCentreY = arrowZone.getCentreY();
 
-    g.setColour(box.findColour(juce::ComboBox::textColourId));
-    g.fillPath(arrow);
+    juce::Path chevron;
+    chevron.startNewSubPath(arrowCentreX - 4.0f, arrowCentreY - 2.0f);
+    chevron.lineTo(arrowCentreX, arrowCentreY + 2.0f);
+    chevron.lineTo(arrowCentreX + 4.0f, arrowCentreY - 2.0f);
+
+    g.setColour(ProgFlowColours::textSecondary());
+    g.strokePath(chevron, juce::PathStrokeType(1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }

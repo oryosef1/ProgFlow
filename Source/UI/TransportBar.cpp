@@ -8,12 +8,14 @@ TransportBar::TransportBar(AudioEngine& engine)
     playButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0x00000000));
     playButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0x00000000));
     playButton.setClickingTogglesState(true);
+    playButton.setTooltip("Play/Pause (Space)");
     playButton.onClick = [this] { playClicked(); };
     addAndMakeVisible(playButton);
 
     // Stop button - completely transparent
     stopButton.setButtonText("");
     stopButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0x00000000));
+    stopButton.setTooltip("Stop");
     stopButton.onClick = [this] { stopClicked(); };
     addAndMakeVisible(stopButton);
 
@@ -22,25 +24,65 @@ TransportBar::TransportBar(AudioEngine& engine)
     recordButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0x00000000));
     recordButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0x00000000));
     recordButton.setClickingTogglesState(true);
+    recordButton.setTooltip("Record (R)");
+    recordButton.onClick = [this] {
+        bool isRecording = recordButton.getToggleState();
+
+        // Arm/disarm all tracks for recording
+        for (int i = 0; i < audioEngine.getNumTracks(); ++i)
+        {
+            if (auto* track = audioEngine.getTrack(i))
+                track->setArmed(isRecording);
+        }
+
+        if (isRecording)
+        {
+            // Starting recording - also start playback with count-in if enabled
+            if (!audioEngine.isPlaying())
+            {
+                if (countInButton.getToggleState())
+                {
+                    audioEngine.playWithCountIn();
+                }
+                else
+                {
+                    audioEngine.play();
+                }
+                playButton.setToggleState(true, juce::dontSendNotification);
+            }
+        }
+        else
+        {
+            // Stopping recording - also stop playback
+            audioEngine.stop();
+            playButton.setToggleState(false, juce::dontSendNotification);
+        }
+
+        repaint();
+    };
     addAndMakeVisible(recordButton);
 
-    // BPM label
-    bpmLabel.setColour(juce::Label::textColourId, ProgFlowColours::textSecondary());
+    // BPM label (Saturn: muted color, uppercase)
+    bpmLabel.setText("BPM", juce::dontSendNotification);
+    bpmLabel.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
+    bpmLabel.setFont(juce::Font(10.0f, juce::Font::bold));
     addAndMakeVisible(bpmLabel);
 
     // BPM slider
     bpmSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    bpmSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 50, 20);
+    bpmSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 45, 20);
     bpmSlider.setRange(20.0, 300.0, 1.0);
     bpmSlider.setValue(120.0);
     bpmSlider.setColour(juce::Slider::textBoxTextColourId, ProgFlowColours::textPrimary());
     bpmSlider.setColour(juce::Slider::textBoxBackgroundColourId, ProgFlowColours::bgTertiary());
     bpmSlider.setColour(juce::Slider::textBoxOutlineColourId, ProgFlowColours::border());
+    bpmSlider.setColour(juce::Slider::trackColourId, ProgFlowColours::accentBlue());
+    bpmSlider.setColour(juce::Slider::backgroundColourId, ProgFlowColours::bgTertiary());
     bpmSlider.onValueChange = [this] { bpmChanged(); };
     addAndMakeVisible(bpmSlider);
 
-    // Tap tempo button
-    tapTempoButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    // Tap tempo button (Saturn styling)
+    tapTempoButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     tapTempoButton.setColour(juce::TextButton::textColourOnId, ProgFlowColours::textPrimary());
     tapTempoButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     tapTempoButton.onClick = [this] { tapTempoClicked(); };
@@ -55,26 +97,24 @@ TransportBar::TransportBar(AudioEngine& engine)
     timeSigSelector.addItem("5/4", 5);
     timeSigSelector.addItem("7/8", 6);
     timeSigSelector.setSelectedId(1, juce::dontSendNotification);
-    timeSigSelector.setColour(juce::ComboBox::backgroundColourId, ProgFlowColours::bgTertiary());
-    timeSigSelector.setColour(juce::ComboBox::textColourId, ProgFlowColours::textPrimary());
-    timeSigSelector.setColour(juce::ComboBox::outlineColourId, ProgFlowColours::border());
     timeSigSelector.setTooltip("Time Signature");
     timeSigSelector.onChange = [this] { timeSigChanged(); };
     addAndMakeVisible(timeSigSelector);
 
-    // Position display
+    // Position display (Saturn: monospace, card background)
     positionLabel.setColour(juce::Label::textColourId, ProgFlowColours::textPrimary());
     positionLabel.setColour(juce::Label::backgroundColourId, ProgFlowColours::bgTertiary());
     positionLabel.setJustificationType(juce::Justification::centred);
-    positionLabel.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 16.0f, juce::Font::plain));
+    positionLabel.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 14.0f, juce::Font::bold));
     addAndMakeVisible(positionLabel);
 
-    // Metronome toggle
+    // Metronome toggle (Saturn style)
     metronomeButton.setColour(juce::ToggleButton::textColourId, ProgFlowColours::textSecondary());
     metronomeButton.setColour(juce::ToggleButton::tickColourId, ProgFlowColours::accentBlue());
     metronomeButton.onClick = [this] {
         audioEngine.setMetronomeEnabled(metronomeButton.getToggleState());
     };
+    metronomeButton.setTooltip("Enable metronome");
     addAndMakeVisible(metronomeButton);
 
     // Count-in toggle
@@ -83,18 +123,42 @@ TransportBar::TransportBar(AudioEngine& engine)
     countInButton.onClick = [this] {
         audioEngine.setCountInBars(countInButton.getToggleState() ? 1 : 0);
     };
+    countInButton.setTooltip("Count-in before recording");
     addAndMakeVisible(countInButton);
 
     // Loop toggle
     loopButton.setColour(juce::ToggleButton::textColourId, ProgFlowColours::textSecondary());
     loopButton.setColour(juce::ToggleButton::tickColourId, ProgFlowColours::accentBlue());
+    loopButton.setTooltip("Enable loop playback (L)");
     addAndMakeVisible(loopButton);
 
-    // CPU meter label
-    cpuLabel.setColour(juce::Label::textColourId, ProgFlowColours::textSecondary());
+    // CPU meter label (Saturn: right aligned, color coded)
+    cpuLabel.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
     cpuLabel.setJustificationType(juce::Justification::centredRight);
-    cpuLabel.setFont(juce::Font(11.0f));
+    cpuLabel.setFont(juce::Font(10.0f));
     addAndMakeVisible(cpuLabel);
+
+    // Home button (back to project selection)
+    homeButton.setButtonText(juce::String::fromUTF8("⌂"));
+    homeButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
+    homeButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    homeButton.setTooltip("Back to project selection");
+    homeButton.onClick = [this]() {
+        if (onBackToProjectSelection)
+            onBackToProjectSelection();
+    };
+    addAndMakeVisible(homeButton);
+
+    // Project name label (clickable to rename)
+    projectNameLabel.setText("Untitled", juce::dontSendNotification);
+    projectNameLabel.setColour(juce::Label::textColourId, ProgFlowColours::textPrimary());
+    projectNameLabel.setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    projectNameLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+    projectNameLabel.setJustificationType(juce::Justification::centredLeft);
+    projectNameLabel.setTooltip("Click to rename project");
+    projectNameLabel.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    projectNameLabel.addMouseListener(this, false);
+    addAndMakeVisible(projectNameLabel);
 
     // Start timer for UI updates (60fps)
     startTimerHz(60);
@@ -107,78 +171,63 @@ TransportBar::~TransportBar()
 
 void TransportBar::paint(juce::Graphics& g)
 {
-    // Background
-    g.fillAll(ProgFlowColours::bgSecondary());
+    // Saturn design: card-like background with subtle gradient
+    auto bounds = getLocalBounds().toFloat();
 
-    // Separator line at bottom
+    // Background gradient
+    juce::ColourGradient gradient(
+        ProgFlowColours::bgSecondary(),
+        0.0f, 0.0f,
+        ProgFlowColours::bgPrimary(),
+        0.0f, bounds.getHeight(),
+        false);
+    g.setGradientFill(gradient);
+    g.fillRect(bounds);
+
+    // Subtle border at bottom
     g.setColour(ProgFlowColours::border());
-    g.drawLine(0, static_cast<float>(getHeight()) - 1, static_cast<float>(getWidth()), static_cast<float>(getHeight()) - 1);
+    g.drawLine(0.0f, bounds.getBottom() - 0.5f, bounds.getRight(), bounds.getBottom() - 0.5f);
 
-    // Draw project name (after buttons, before position)
-    auto bounds = getLocalBounds().reduced(8);
-    int buttonsWidth = 3 * (bounds.getHeight() - 4 + 8) + 20;  // 3 buttons + spacer
-    int bpmWidth = 35 + 120 + 10;  // label + slider + spacer
-    int nameX = buttonsWidth + bpmWidth + 50;  // After time sig
+    // Draw stereo meters (Saturn style: LED segments)
+    auto meterX = getWidth() - 60;
+    auto meterY = 8;
+    auto meterWidth = 12;
+    auto meterGap = 3;
+    auto meterHeight = getHeight() - 16;
 
-    g.setColour(ProgFlowColours::textPrimary());
-    g.setFont(juce::FontOptions(13.0f));
-    juce::String displayName = projectName;
-    if (projectDirty) displayName += " *";
-    g.drawText(displayName, nameX, 0, 150, getHeight(), juce::Justification::centredLeft);
+    // Left meter
+    drawMeter(g, meterX, meterY, meterWidth, meterHeight, meterLevelL, peakLevelL);
 
-    // Draw meters (wider, darker background, with peak hold)
-    auto meterX = getWidth() - 70;
-    auto meterY = 6;
-    auto meterWidth = 14;
-    auto meterGap = 4;
-    auto meterHeight = getHeight() - 12;
+    // Right meter
+    drawMeter(g, meterX + meterWidth + meterGap, meterY, meterWidth, meterHeight, meterLevelR, peakLevelR);
+}
 
-    // Left meter background (very dark)
-    g.setColour(ProgFlowColours::meterBg());
-    g.fillRoundedRectangle(static_cast<float>(meterX), static_cast<float>(meterY),
-                           static_cast<float>(meterWidth), static_cast<float>(meterHeight), 2.0f);
+void TransportBar::drawMeter(juce::Graphics& g, int x, int y, int width, int height, float level, float peak)
+{
+    // Background
+    g.setColour(ProgFlowColours::bgPrimary());
+    g.fillRoundedRectangle(static_cast<float>(x), static_cast<float>(y),
+                           static_cast<float>(width), static_cast<float>(height), 2.0f);
 
-    // Left meter value
-    auto levelHeightL = static_cast<int>(meterLevelL * meterHeight);
-    auto meterColourL = meterLevelL > 0.8f ? ProgFlowColours::meterRed() :
-                        meterLevelL > 0.5f ? ProgFlowColours::meterYellow() : ProgFlowColours::meterGreen();
-    g.setColour(meterColourL);
-    if (levelHeightL > 0)
-        g.fillRoundedRectangle(static_cast<float>(meterX), static_cast<float>(meterY + meterHeight - levelHeightL),
-                               static_cast<float>(meterWidth), static_cast<float>(levelHeightL), 2.0f);
-
-    // Left peak hold indicator
-    if (peakLevelL > 0.01f)
+    // Level bar with gradient coloring
+    int levelHeight = static_cast<int>(level * height);
+    if (levelHeight > 0)
     {
-        auto peakY = meterY + meterHeight - static_cast<int>(peakLevelL * meterHeight);
-        auto peakColour = peakLevelL > 0.8f ? ProgFlowColours::meterRed() :
-                          peakLevelL > 0.5f ? ProgFlowColours::meterYellow() : ProgFlowColours::meterGreen();
-        g.setColour(peakColour);
-        g.fillRect(meterX, peakY, meterWidth, 2);
+        auto meterColour = level > 0.8f ? ProgFlowColours::accentRed() :
+                          level > 0.5f ? ProgFlowColours::accentOrange() : ProgFlowColours::accentGreen();
+        g.setColour(meterColour);
+        g.fillRoundedRectangle(static_cast<float>(x), static_cast<float>(y + height - levelHeight),
+                               static_cast<float>(width), static_cast<float>(levelHeight), 2.0f);
     }
 
-    // Right meter background
-    g.setColour(ProgFlowColours::meterBg());
-    g.fillRoundedRectangle(static_cast<float>(meterX + meterWidth + meterGap), static_cast<float>(meterY),
-                           static_cast<float>(meterWidth), static_cast<float>(meterHeight), 2.0f);
-
-    // Right meter value
-    auto levelHeightR = static_cast<int>(meterLevelR * meterHeight);
-    auto meterColourR = meterLevelR > 0.8f ? ProgFlowColours::meterRed() :
-                        meterLevelR > 0.5f ? ProgFlowColours::meterYellow() : ProgFlowColours::meterGreen();
-    g.setColour(meterColourR);
-    if (levelHeightR > 0)
-        g.fillRoundedRectangle(static_cast<float>(meterX + meterWidth + meterGap), static_cast<float>(meterY + meterHeight - levelHeightR),
-                               static_cast<float>(meterWidth), static_cast<float>(levelHeightR), 2.0f);
-
-    // Right peak hold indicator
-    if (peakLevelR > 0.01f)
+    // Peak hold indicator
+    if (peak > 0.01f)
     {
-        auto peakY = meterY + meterHeight - static_cast<int>(peakLevelR * meterHeight);
-        auto peakColour = peakLevelR > 0.8f ? ProgFlowColours::meterRed() :
-                          peakLevelR > 0.5f ? ProgFlowColours::meterYellow() : ProgFlowColours::meterGreen();
+        int peakY = y + height - static_cast<int>(peak * height);
+        auto peakColour = peak > 0.8f ? ProgFlowColours::accentRed() :
+                         peak > 0.5f ? ProgFlowColours::accentOrange() : ProgFlowColours::accentGreen();
         g.setColour(peakColour);
-        g.fillRect(meterX + meterWidth + meterGap, peakY, meterWidth, 2);
+        g.fillRect(x, peakY, width, 2);
     }
 }
 
@@ -187,15 +236,19 @@ void TransportBar::paintOverChildren(juce::Graphics& g)
     // Draw button backgrounds and icons AFTER buttons have painted
     const float cornerRadius = 6.0f;
 
-    // Play button background and icon
+    // Play button (Saturn: cyan when playing)
     {
         auto bounds = playButton.getBounds().toFloat();
         bool isPlaying = playButton.getToggleState();
-        g.setColour(isPlaying ? ProgFlowColours::accentGreen() : ProgFlowColours::bgTertiary());
+        g.setColour(isPlaying ? ProgFlowColours::accentGreen() : ProgFlowColours::surfaceBg());
         g.fillRoundedRectangle(bounds, cornerRadius);
 
-        auto iconBounds = bounds.reduced(12);
-        g.setColour(isPlaying ? juce::Colours::white : ProgFlowColours::accentGreen());
+        // Subtle border
+        g.setColour(juce::Colour(0x15ffffff));
+        g.drawRoundedRectangle(bounds, cornerRadius, 1.0f);
+
+        auto iconBounds = bounds.reduced(10);
+        g.setColour(isPlaying ? ProgFlowColours::bgPrimary() : ProgFlowColours::accentGreen());
 
         if (isPlaying)
         {
@@ -218,67 +271,86 @@ void TransportBar::paintOverChildren(juce::Graphics& g)
         }
     }
 
-    // Stop button background and icon
+    // Stop button
     {
         auto bounds = stopButton.getBounds().toFloat();
-        g.setColour(ProgFlowColours::bgTertiary());
+        g.setColour(ProgFlowColours::surfaceBg());
         g.fillRoundedRectangle(bounds, cornerRadius);
 
-        // Draw stop square
-        auto iconBounds = bounds.reduced(14);
+        g.setColour(juce::Colour(0x15ffffff));
+        g.drawRoundedRectangle(bounds, cornerRadius, 1.0f);
+
+        auto iconBounds = bounds.reduced(12);
         g.setColour(ProgFlowColours::textPrimary());
         g.fillRect(iconBounds);
     }
 
-    // Record button background and icon
+    // Record button (Saturn: coral when recording)
     {
         auto bounds = recordButton.getBounds().toFloat();
-        g.setColour(recordButton.getToggleState() ? ProgFlowColours::accentRed() : ProgFlowColours::bgTertiary());
+        bool isRecording = recordButton.getToggleState();
+        g.setColour(isRecording ? ProgFlowColours::accentRed() : ProgFlowColours::surfaceBg());
         g.fillRoundedRectangle(bounds, cornerRadius);
 
-        // Draw record circle
-        auto iconBounds = bounds.reduced(12);
+        g.setColour(juce::Colour(0x15ffffff));
+        g.drawRoundedRectangle(bounds, cornerRadius, 1.0f);
+
+        auto iconBounds = bounds.reduced(10);
         float size = juce::jmin(iconBounds.getWidth(), iconBounds.getHeight());
-        g.setColour(recordButton.getToggleState() ? juce::Colours::white : ProgFlowColours::accentRed());
+        g.setColour(isRecording ? ProgFlowColours::bgPrimary() : ProgFlowColours::accentRed());
         g.fillEllipse(iconBounds.getCentreX() - size/2, iconBounds.getCentreY() - size/2, size, size);
     }
 }
 
 void TransportBar::resized()
 {
-    auto bounds = getLocalBounds().reduced(8);
-    int buttonSize = bounds.getHeight() - 4;
+    auto bounds = getLocalBounds().reduced(8, 6);
+    int buttonSize = bounds.getHeight();
 
-    // Transport buttons (left side) - make them square
-    playButton.setBounds(bounds.removeFromLeft(buttonSize + 8).reduced(2));
-    stopButton.setBounds(bounds.removeFromLeft(buttonSize + 8).reduced(2));
-    recordButton.setBounds(bounds.removeFromLeft(buttonSize + 8).reduced(2));
+    // Transport buttons (left side) - square buttons
+    playButton.setBounds(bounds.removeFromLeft(buttonSize).reduced(1));
+    bounds.removeFromLeft(4);
+    stopButton.setBounds(bounds.removeFromLeft(buttonSize).reduced(1));
+    bounds.removeFromLeft(4);
+    recordButton.setBounds(bounds.removeFromLeft(buttonSize).reduced(1));
 
-    bounds.removeFromLeft(20); // Spacer
+    bounds.removeFromLeft(16); // Spacer
 
     // BPM control
-    bpmLabel.setBounds(bounds.removeFromLeft(35));
-    bpmSlider.setBounds(bounds.removeFromLeft(100));
-    tapTempoButton.setBounds(bounds.removeFromLeft(40).reduced(2, 6));
+    bpmLabel.setBounds(bounds.removeFromLeft(30).withHeight(bounds.getHeight()));
+    bpmSlider.setBounds(bounds.removeFromLeft(110));
+    bounds.removeFromLeft(4);
+    tapTempoButton.setBounds(bounds.removeFromLeft(36).reduced(0, 4));
 
-    bounds.removeFromLeft(15); // Spacer
+    bounds.removeFromLeft(12); // Spacer
 
     // Time signature
-    timeSigSelector.setBounds(bounds.removeFromLeft(55).reduced(0, 6));
+    timeSigSelector.setBounds(bounds.removeFromLeft(52).reduced(0, 4));
 
-    // Position display
-    positionLabel.setBounds(bounds.removeFromLeft(100));
+    bounds.removeFromLeft(12); // Spacer
 
-    bounds.removeFromLeft(20); // Spacer
+    // Position display (prominent)
+    positionLabel.setBounds(bounds.removeFromLeft(90).reduced(0, 2));
+
+    bounds.removeFromLeft(12); // Spacer
+
+    // Project name (clickable)
+    projectNameLabel.setBounds(bounds.removeFromLeft(120).reduced(0, 4));
+
+    bounds.removeFromLeft(8); // Spacer
 
     // Toggles
-    metronomeButton.setBounds(bounds.removeFromLeft(70));
-    countInButton.setBounds(bounds.removeFromLeft(65));
-    loopButton.setBounds(bounds.removeFromLeft(60));
+    metronomeButton.setBounds(bounds.removeFromLeft(65));
+    countInButton.setBounds(bounds.removeFromLeft(60));
+    loopButton.setBounds(bounds.removeFromLeft(55));
 
-    // CPU label (before meters)
-    bounds.removeFromRight(45);  // Space for wider meters
-    cpuLabel.setBounds(bounds.removeFromRight(70));
+    // Home button (far right, before meters)
+    bounds.removeFromRight(35);  // Space for meters
+    homeButton.setBounds(bounds.removeFromRight(32).reduced(2, 4));
+    bounds.removeFromRight(4);
+
+    // CPU label
+    cpuLabel.setBounds(bounds.removeFromRight(60));
 }
 
 void TransportBar::timerCallback()
@@ -286,7 +358,7 @@ void TransportBar::timerCallback()
     updatePositionDisplay();
 
     // Update meter values
-    meterLevelL = audioEngine.getMasterLevelL() * 3.0f; // Scale for visibility
+    meterLevelL = audioEngine.getMasterLevelL() * 3.0f;
     meterLevelR = audioEngine.getMasterLevelR() * 3.0f;
     meterLevelL = juce::jlimit(0.0f, 1.0f, meterLevelL);
     meterLevelR = juce::jlimit(0.0f, 1.0f, meterLevelR);
@@ -320,16 +392,15 @@ void TransportBar::timerCallback()
         cpuUsage = static_cast<float>(deviceManager->getCpuUsage());
         int cpuPercent = static_cast<int>(cpuUsage * 100.0f);
 
-        // Update label with color coding
-        juce::String cpuText = "CPU: " + juce::String(cpuPercent) + "%";
+        juce::String cpuText = "CPU " + juce::String(cpuPercent) + "%";
         cpuLabel.setText(cpuText, juce::dontSendNotification);
 
-        // Color code based on usage
-        juce::Colour cpuColour = ProgFlowColours::textSecondary();
+        // Color code based on usage (Saturn colors)
+        juce::Colour cpuColour = ProgFlowColours::textMuted();
         if (cpuUsage > 0.8f)
-            cpuColour = ProgFlowColours::meterRed();
+            cpuColour = ProgFlowColours::accentRed();
         else if (cpuUsage > 0.5f)
-            cpuColour = ProgFlowColours::meterYellow();
+            cpuColour = ProgFlowColours::accentOrange();
         else if (cpuUsage > 0.3f)
             cpuColour = ProgFlowColours::accentGreen();
 
@@ -354,7 +425,6 @@ void TransportBar::playClicked()
     }
     else
     {
-        // Use count-in if enabled
         if (audioEngine.getCountInBars() > 0)
             audioEngine.playWithCountIn();
         else
@@ -365,6 +435,15 @@ void TransportBar::playClicked()
 void TransportBar::stopClicked()
 {
     audioEngine.stop();
+
+    // Disarm all tracks and reset record button
+    for (int i = 0; i < audioEngine.getNumTracks(); ++i)
+    {
+        if (auto* track = audioEngine.getTrack(i))
+            track->setArmed(false);
+    }
+    recordButton.setToggleState(false, juce::dontSendNotification);
+    repaint();
 }
 
 void TransportBar::bpmChanged()
@@ -382,19 +461,15 @@ void TransportBar::tapTempoClicked()
         tapTimes.clear();
     }
 
-    // Add this tap
     tapTimes.push_back(now);
 
-    // Keep only the last MAX_TAPS taps
     if (tapTimes.size() > MAX_TAPS)
     {
         tapTimes.erase(tapTimes.begin());
     }
 
-    // Need at least 2 taps to calculate tempo
     if (tapTimes.size() >= 2)
     {
-        // Calculate average interval
         juce::int64 totalInterval = 0;
         for (size_t i = 1; i < tapTimes.size(); ++i)
         {
@@ -402,15 +477,9 @@ void TransportBar::tapTempoClicked()
         }
 
         double avgIntervalMs = static_cast<double>(totalInterval) / static_cast<double>(tapTimes.size() - 1);
-
-        // Convert to BPM (60000ms / interval = BPM)
-        double bpm = 60000.0 / avgIntervalMs;
-
-        // Clamp to valid range and update
-        bpm = juce::jlimit(20.0, 300.0, bpm);
+        double bpm = juce::jlimit(20.0, 300.0, 60000.0 / avgIntervalMs);
 
         bpmSlider.setValue(bpm, juce::sendNotification);
-        DBG("Tap tempo: " << bpm << " BPM (from " << tapTimes.size() << " taps)");
     }
 }
 
@@ -418,7 +487,6 @@ void TransportBar::updatePositionDisplay()
 {
     double positionInBeats = audioEngine.getPositionInBeats();
 
-    // Get current time signature from TimeSignatureTrack
     auto timeSig = audioEngine.getCurrentTimeSignature();
     int beatsPerBar = timeSig.numerator;
 
@@ -430,7 +498,7 @@ void TransportBar::updatePositionDisplay()
     juce::String posText = juce::String::formatted("%d:%d:%03d", bars, beats, ticks);
     positionLabel.setText(posText, juce::dontSendNotification);
 
-    // Update time signature selector to match current time sig
+    // Update time signature selector to match
     juce::String timeSigText = juce::String(timeSig.numerator) + "/" + juce::String(timeSig.denominator);
     for (int i = 0; i < timeSigSelector.getNumItems(); ++i)
     {
@@ -442,7 +510,7 @@ void TransportBar::updatePositionDisplay()
         }
     }
 
-    // Update BPM slider to reflect current tempo (which may be automated)
+    // Update BPM slider to reflect current tempo
     double currentTempo = audioEngine.getCurrentTempo();
     if (std::abs(bpmSlider.getValue() - currentTempo) > 0.5)
     {
@@ -454,7 +522,6 @@ void TransportBar::timeSigChanged()
 {
     juce::String selected = timeSigSelector.getText();
 
-    // Parse the time signature string (e.g., "4/4" -> numerator=4, denominator=4)
     int slashPos = selected.indexOf("/");
     if (slashPos > 0)
     {
@@ -465,5 +532,47 @@ void TransportBar::timeSigChanged()
         {
             audioEngine.getTimeSignatureTrack().setInitialTimeSignature(numerator, denominator);
         }
+    }
+}
+
+void TransportBar::setProjectName(const juce::String& name)
+{
+    projectName = name;
+    juce::String displayText = projectName;
+    if (projectDirty) displayText += " *";
+    projectNameLabel.setText(displayText, juce::dontSendNotification);
+}
+
+void TransportBar::showRenameDialog()
+{
+    auto* alertWindow = new juce::AlertWindow("Rename Project",
+                                               "Enter a new name for the project:",
+                                               juce::MessageBoxIconType::NoIcon);
+
+    alertWindow->addTextEditor("name", projectName, "Project Name:");
+    alertWindow->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    alertWindow->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    alertWindow->enterModalState(true, juce::ModalCallbackFunction::create(
+        [this, alertWindow](int result)
+        {
+            if (result == 1)
+            {
+                juce::String newName = alertWindow->getTextEditorContents("name").trim();
+                if (newName.isNotEmpty() && newName != projectName)
+                {
+                    if (onProjectRename)
+                        onProjectRename(newName);
+                }
+            }
+            delete alertWindow;
+        }), true);
+}
+
+void TransportBar::mouseDown(const juce::MouseEvent& e)
+{
+    if (e.originalComponent == &projectNameLabel)
+    {
+        showRenameDialog();
     }
 }

@@ -3,26 +3,36 @@
 DrumSynthEditor::DrumSynthEditor(DrumSynth& s)
     : SynthEditorBase(), synth(s)
 {
-    // Kit Section (in header, next to presets)
-    createSectionLabel(kitLabel, "KIT");
-    addAndMakeVisible(kitLabel);
+    // Hide the base class preset selector - Drums uses kit selector instead
+    presetSelector.setVisible(false);
+    presetLabel.setVisible(false);
 
+    // Kit selector in header
     kitSelector.addListener(this);
     addAndMakeVisible(kitSelector);
     populateKits();
 
-    // Master Volume (inherited from base)
+    // Master Volume
     masterVolume.setLabel("Volume");
+    masterVolume.setTooltipText("Master drum kit volume");
     if (auto* param = synth.getParameterInfo("volume"))
     {
         masterVolume.setRange(param->minValue, param->maxValue, param->step);
         masterVolume.setDefaultValue(param->defaultValue);
         masterVolume.setValue(param->value, juce::dontSendNotification);
     }
-    masterVolume.onValueChange = [this](float value)
-    {
-        synth.setParameter("volume", value);
-    };
+    masterVolume.onValueChange = [this](float value) { synth.setParameter("volume", value); };
+
+    //==========================================================================
+    // CARD PANELS (Saturn design - no headers for compact layout)
+    //==========================================================================
+    padGridCard.setShowHeader(false);
+    padGridCard.setPadding(6);
+    addAndMakeVisible(padGridCard);
+
+    padControlsCard.setShowHeader(false);
+    padControlsCard.setPadding(6);
+    addAndMakeVisible(padControlsCard);
 
     // Pad Buttons (4x4 grid)
     for (int i = 0; i < NUM_PADS; ++i)
@@ -30,62 +40,62 @@ DrumSynthEditor::DrumSynthEditor(DrumSynth& s)
         padButtons[i].setButtonText(synth.getPadName(i));
         padButtons[i].addListener(this);
         padButtons[i].setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
-        addAndMakeVisible(padButtons[i]);
+        padGridCard.addAndMakeVisible(padButtons[i]);
     }
 
-    // Pad Controls Section
-    createSectionLabel(padControlsLabel, "PAD CONTROLS");
-    addAndMakeVisible(padControlsLabel);
-
-    setupKnob(pitchKnob, "Pitch");
-    setupKnob(decayKnob, "Decay");
-    setupKnob(toneKnob, "Tone");
-    setupKnob(levelKnob, "Level");
-    setupKnob(panKnob, "Pan");
+    //==========================================================================
+    // PAD CONTROLS
+    //==========================================================================
+    setupKnob(pitchKnob, "Pitch", "", "Pitch shift - change drum tone");
+    padControlsCard.addAndMakeVisible(pitchKnob);
+    setupKnob(decayKnob, "Decay", "", "Decay time - how long sound rings out");
+    padControlsCard.addAndMakeVisible(decayKnob);
+    setupKnob(toneKnob, "Tone", "", "Tone control - brightness of the drum");
+    padControlsCard.addAndMakeVisible(toneKnob);
+    setupKnob(levelKnob, "Level", "", "Individual pad volume level");
+    padControlsCard.addAndMakeVisible(levelKnob);
+    setupKnob(panKnob, "Pan", "", "Stereo position (-1 = left, +1 = right)");
+    padControlsCard.addAndMakeVisible(panKnob);
 
     // Set up knob callbacks
-    pitchKnob.onValueChange = [this](float value)
-    {
-        synth.setPadParameter(selectedPad, "pitch", value);
-    };
-    decayKnob.onValueChange = [this](float value)
-    {
-        synth.setPadParameter(selectedPad, "decay", value);
-    };
-    toneKnob.onValueChange = [this](float value)
-    {
-        synth.setPadParameter(selectedPad, "tone", value);
-    };
-    levelKnob.onValueChange = [this](float value)
-    {
-        synth.setPadParameter(selectedPad, "level", value);
-    };
-    panKnob.onValueChange = [this](float value)
-    {
-        synth.setPadParameter(selectedPad, "pan", value);
-    };
+    pitchKnob.onValueChange = [this](float value) { synth.setPadParameter(selectedPad, "pitch", value); };
+    decayKnob.onValueChange = [this](float value) { synth.setPadParameter(selectedPad, "decay", value); };
+    toneKnob.onValueChange = [this](float value) { synth.setPadParameter(selectedPad, "tone", value); };
+    levelKnob.onValueChange = [this](float value) { synth.setPadParameter(selectedPad, "level", value); };
+    panKnob.onValueChange = [this](float value) { synth.setPadParameter(selectedPad, "pan", value); };
 
-    // Select first pad
     selectPad(0);
     refreshFromSynth();
 }
 
 DrumSynthEditor::~DrumSynthEditor()
 {
+    stopTimer();
     kitSelector.removeListener(this);
     for (auto& btn : padButtons)
         btn.removeListener(this);
 }
 
-void DrumSynthEditor::setupKnob(RotaryKnob& knob, const juce::String& label, const juce::String& suffix)
+void DrumSynthEditor::timerCallback()
+{
+    stopTimer();
+    flashingPad = -1;
+    updatePadAppearance();
+}
+
+void DrumSynthEditor::setupKnob(RotaryKnob& knob, const juce::String& label,
+                                 const juce::String& suffix, const juce::String& description)
 {
     knob.setLabel(label);
     knob.setValueSuffix(suffix);
     knob.setRange(0.0f, 1.0f, 0.01f);
     knob.setDefaultValue(0.5f);
+
+    if (description.isNotEmpty())
+        knob.setTooltipText(description);
+
     addAndMakeVisible(knob);
 }
-
 
 void DrumSynthEditor::populateKits()
 {
@@ -94,17 +104,11 @@ void DrumSynthEditor::populateKits()
     auto kits = synth.getAvailableKits();
     int id = 1;
     for (const auto& kit : kits)
-    {
         kitSelector.addItem(kit, id++);
-    }
 
-    // Select current kit
     juce::String currentKit = synth.getCurrentKit();
     int index = kits.indexOf(currentKit);
-    if (index >= 0)
-        kitSelector.setSelectedId(index + 1, juce::dontSendNotification);
-    else
-        kitSelector.setSelectedId(1, juce::dontSendNotification);
+    kitSelector.setSelectedId(index >= 0 ? index + 1 : 1, juce::dontSendNotification);
 }
 
 void DrumSynthEditor::selectPad(int padIndex)
@@ -112,28 +116,55 @@ void DrumSynthEditor::selectPad(int padIndex)
     if (padIndex < 0 || padIndex >= NUM_PADS)
         return;
 
-    // Update button colors
+    selectedPad = padIndex;
+    updatePadAppearance();
+    updatePadControls();
+
+    // Update card title to show selected pad
+    padControlsCard.setTitle("PAD: " + synth.getPadName(padIndex));
+}
+
+void DrumSynthEditor::flashPad(int padIndex)
+{
+    if (padIndex < 0 || padIndex >= NUM_PADS)
+        return;
+
+    flashingPad = padIndex;
+    updatePadAppearance();
+
+    // Start timer to reset flash after 150ms
+    startTimer(150);
+}
+
+void DrumSynthEditor::updatePadAppearance()
+{
     for (int i = 0; i < NUM_PADS; ++i)
     {
-        if (i == padIndex)
+        if (i == flashingPad)
+        {
+            // Currently playing - bright highlight
             padButtons[i].setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentBlue());
+        }
+        else if (i == selectedPad)
+        {
+            // Selected for editing - subtle highlight (darker shade)
+            padButtons[i].setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgHover());
+        }
         else
+        {
+            // Normal state
             padButtons[i].setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        }
     }
-
-    selectedPad = padIndex;
-    updatePadControls();
 }
 
 void DrumSynthEditor::updatePadControls()
 {
-    // Set knob ranges
     pitchKnob.setRange(0.5f, 2.0f, 0.01f);
     pitchKnob.setDefaultValue(1.0f);
     panKnob.setRange(-1.0f, 1.0f, 0.01f);
     panKnob.setDefaultValue(0.0f);
 
-    // Get current values
     pitchKnob.setValue(synth.getPadParameter(selectedPad, "pitch"), juce::dontSendNotification);
     decayKnob.setValue(synth.getPadParameter(selectedPad, "decay"), juce::dontSendNotification);
     toneKnob.setValue(synth.getPadParameter(selectedPad, "tone"), juce::dontSendNotification);
@@ -150,6 +181,9 @@ void DrumSynthEditor::comboBoxChanged(juce::ComboBox* box)
         if (index >= 0 && index < kits.size())
         {
             synth.loadKit(kits[index]);
+            // Update pad names
+            for (int i = 0; i < NUM_PADS; ++i)
+                padButtons[i].setButtonText(synth.getPadName(i));
             updatePadControls();
         }
     }
@@ -157,18 +191,17 @@ void DrumSynthEditor::comboBoxChanged(juce::ComboBox* box)
 
 void DrumSynthEditor::buttonClicked(juce::Button* button)
 {
-    // Check if it's a pad button
     for (int i = 0; i < NUM_PADS; ++i)
     {
         if (button == &padButtons[i])
         {
-            selectPad(i);
-
-            // Also trigger the sound for preview
+            selectPad(i);      // Select for editing
+            flashPad(i);       // Flash briefly when played
             synth.allNotesOff();
-            // Get MIDI note for this pad (would need to expose this)
-            int midiNote = 36 + i; // Simple mapping
-            synth.noteOn(midiNote, 0.8f);
+            // Use the actual MIDI note assigned to this pad
+            int midiNote = synth.getPadMidiNote(i);
+            if (midiNote >= 0)
+                synth.noteOn(midiNote, 0.8f);
             return;
         }
     }
@@ -176,85 +209,69 @@ void DrumSynthEditor::buttonClicked(juce::Button* button)
 
 void DrumSynthEditor::refreshFromSynth()
 {
-    // Master volume
     if (auto* param = synth.getParameterInfo("volume"))
         masterVolume.setValue(param->value, juce::dontSendNotification);
 
-    // Kit selector
     populateKits();
-
-    // Pad controls
     updatePadControls();
 }
 
 void DrumSynthEditor::layoutContent(juce::Rectangle<int> area)
 {
-    const int labelHeight = 16;
-    const int knobSpacing = 8;
-    const int innerMargin = 6;
+    const int cardGap = 6;
+    const int knobHeight = RotaryKnob::TOTAL_HEIGHT;
 
-    // Add Kit selector to header (between preset and master volume)
-    auto headerArea = getLocalBounds().removeFromTop(HEADER_HEIGHT);
-    headerArea.removeFromLeft(SECTION_PADDING);
+    // Add Kit selector to header area (using space where preset selector was)
+    auto headerBounds = getLocalBounds().removeFromTop(HEADER_HEIGHT).reduced(SECTION_PADDING, 16);
+    kitSelector.setBounds(headerBounds.removeFromLeft(150).withHeight(28));
 
-    // Position kit selector next to preset selector (which is already laid out by base)
-    auto kitArea = headerArea.removeFromLeft(160).reduced(0, 8);
-    kitLabel.setBounds(kitArea.removeFromTop(labelHeight));
-    kitSelector.setBounds(kitArea.withHeight(24));
+    // Two cards: Pad Grid (55%) | Pad Controls (45%)
+    int padGridWidth = area.getWidth() * 55 / 100;
 
-    // Split content into two sections: Pad Grid (55%) | Pad Controls (45%)
-    const int padGridWidth = static_cast<int>(area.getWidth() * 0.55f);
-    auto padGridArea = area.removeFromLeft(padGridWidth).reduced(SECTION_PADDING);
-    auto controlsArea = area.reduced(SECTION_PADDING);
+    auto padGridBounds = area.removeFromLeft(padGridWidth);
+    padGridCard.setBounds(padGridBounds);
+    auto gridContent = padGridCard.getContentArea();
 
-    // Store divider position
-    padGridDividerX = padGridArea.getRight() + SECTION_PADDING;
+    area.removeFromLeft(cardGap);
+    padControlsCard.setBounds(area);
+    auto controlsContent = padControlsCard.getContentArea();
 
     //==========================================================================
-    // PAD GRID SECTION (4x4 grid of buttons)
+    // PAD GRID (4x4)
+    //==========================================================================
     {
-        const int padW = (padGridArea.getWidth() - 3 * innerMargin) / 4;
-        const int padH = (padGridArea.getHeight() - 3 * innerMargin) / 4;
+        const int innerMargin = 4;
+        const int padW = (gridContent.getWidth() - 3 * innerMargin) / 4;
+        const int padH = (gridContent.getHeight() - 3 * innerMargin) / 4;
 
         for (int row = 0; row < 4; ++row)
         {
             for (int col = 0; col < 4; ++col)
             {
                 int index = row * 4 + col;
-                int x = padGridArea.getX() + col * (padW + innerMargin);
-                int y = padGridArea.getY() + row * (padH + innerMargin);
+                int x = gridContent.getX() + col * (padW + innerMargin);
+                int y = gridContent.getY() + row * (padH + innerMargin);
                 padButtons[index].setBounds(x, y, padW, padH);
             }
         }
     }
 
     //==========================================================================
-    // PAD CONTROLS SECTION
+    // PAD CONTROLS (5 knobs in a row)
+    //==========================================================================
     {
-        padControlsLabel.setBounds(controlsArea.removeFromTop(labelHeight));
-        controlsArea.removeFromTop(knobSpacing);
+        int knobSpacing = controlsContent.getWidth() / 5;
+        int centreY = controlsContent.getCentreY();
 
-        // Arrange knobs in two rows
-        auto row1 = controlsArea.removeFromTop(KNOB_SIZE + 20);
-        pitchKnob.setBounds(row1.removeFromLeft(KNOB_SIZE).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE));
-        row1.removeFromLeft(knobSpacing);
-        decayKnob.setBounds(row1.removeFromLeft(KNOB_SIZE).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE));
-        row1.removeFromLeft(knobSpacing);
-        toneKnob.setBounds(row1.removeFromLeft(KNOB_SIZE).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE));
-
-        controlsArea.removeFromTop(knobSpacing);
-        auto row2 = controlsArea.removeFromTop(KNOB_SIZE + 20);
-        levelKnob.setBounds(row2.removeFromLeft(KNOB_SIZE).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE));
-        row2.removeFromLeft(knobSpacing);
-        panKnob.setBounds(row2.removeFromLeft(KNOB_SIZE).withSizeKeepingCentre(KNOB_SIZE, KNOB_SIZE));
+        pitchKnob.setBounds(controlsContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        decayKnob.setBounds(controlsContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        toneKnob.setBounds(controlsContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        levelKnob.setBounds(controlsContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        panKnob.setBounds(controlsContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
     }
 }
 
-void DrumSynthEditor::drawDividers(juce::Graphics& g, juce::Rectangle<int> area)
+void DrumSynthEditor::drawDividers(juce::Graphics& /*g*/, juce::Rectangle<int> /*area*/)
 {
-    // Draw vertical divider between pad grid and pad controls
-    if (padGridDividerX > 0)
-    {
-        drawVerticalDivider(g, padGridDividerX, area.getY(), area.getBottom());
-    }
+    // No dividers needed - CardPanels handle their own styling
 }

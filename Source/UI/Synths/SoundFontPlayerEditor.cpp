@@ -21,57 +21,70 @@ const char* SoundFontPlayerEditor::categoryNames[NUM_CATEGORIES] = {
 };
 
 SoundFontPlayerEditor::SoundFontPlayerEditor(SoundFontPlayer& s)
-    : synth(s)
+    : SynthEditorBase(), synth(s)
 {
-    // Category Section
-    createSectionLabel(categoryLabel, "CATEGORY");
-    addAndMakeVisible(categoryLabel);
+    // Hide the base class preset selector - SoundFont uses category/instrument instead
+    presetSelector.setVisible(false);
+    presetLabel.setVisible(false);
 
+    // Setup master volume (from base class)
+    setupKnob(masterVolume, "volume", "Volume", "", "Master output volume");
+
+    // Category/Instrument selectors for header
     categorySelector.addListener(this);
     addAndMakeVisible(categorySelector);
     populateCategories();
-
-    // Instrument Section
-    createSectionLabel(instrumentLabel, "INSTRUMENT");
-    addAndMakeVisible(instrumentLabel);
 
     instrumentSelector.addListener(this);
     addAndMakeVisible(instrumentSelector);
     populateInstruments(0);
 
-    // Master Volume
-    createSectionLabel(masterLabel, "MASTER");
-    addAndMakeVisible(masterLabel);
-    setupKnob(masterVolume, "volume", "Volume");
+    //==========================================================================
+    // CARD PANELS (Saturn design - no headers for compact layout)
+    //==========================================================================
+    controlsCard.setShowHeader(false);
+    controlsCard.setPadding(6);
+    addAndMakeVisible(controlsCard);
 
-    // Controls Section
-    createSectionLabel(controlsLabel, "CONTROLS");
-    addAndMakeVisible(controlsLabel);
+    envelopeCard.setShowHeader(false);
+    envelopeCard.setPadding(6);
+    addAndMakeVisible(envelopeCard);
 
-    setupKnob(volumeKnob, "volume", "Volume");
-    setupKnob(panKnob, "pan", "Pan");
-    setupKnob(pitchBendKnob, "pitchBend", "Bend");
-    setupKnob(modWheelKnob, "modWheel", "Mod");
+    soundFontCard.setShowHeader(false);
+    soundFontCard.setPadding(6);
+    addAndMakeVisible(soundFontCard);
 
-    // Envelope Section
-    createSectionLabel(envelopeLabel, "ENVELOPE OVERRIDE");
-    addAndMakeVisible(envelopeLabel);
+    //==========================================================================
+    // CONTROLS
+    //==========================================================================
+    setupKnob(volumeKnob, "volume", "Volume", "", "Channel volume level");
+    controlsCard.addAndMakeVisible(volumeKnob);
+    setupKnob(panKnob, "pan", "Pan", "", "Stereo position (-1 = left, +1 = right)");
+    controlsCard.addAndMakeVisible(panKnob);
+    setupKnob(pitchBendKnob, "pitchBend", "Bend", "", "Pitch bend range in semitones");
+    controlsCard.addAndMakeVisible(pitchBendKnob);
+    setupKnob(modWheelKnob, "modWheel", "Mod", "", "Modulation wheel amount");
+    controlsCard.addAndMakeVisible(modWheelKnob);
 
-    setupKnob(attackKnob, "attackOverride", "Attack", " s");
-    setupKnob(releaseKnob, "releaseOverride", "Release", " s");
+    //==========================================================================
+    // ENVELOPE OVERRIDES
+    //==========================================================================
+    setupKnob(attackKnob, "attackOverride", "Attack", " s", "Override attack time - slower for pads, faster for plucks");
+    envelopeCard.addAndMakeVisible(attackKnob);
+    setupKnob(releaseKnob, "releaseOverride", "Release", " s", "Override release time - how long sound rings after note off");
+    envelopeCard.addAndMakeVisible(releaseKnob);
 
-    // SoundFont Section
-    createSectionLabel(soundFontLabel, "SOUNDFONT");
-    addAndMakeVisible(soundFontLabel);
-
+    //==========================================================================
+    // SOUNDFONT INFO
+    //==========================================================================
     loadSF2Button.setButtonText("Load SF2...");
     loadSF2Button.addListener(this);
-    addAndMakeVisible(loadSF2Button);
+    soundFontCard.addAndMakeVisible(loadSF2Button);
 
     soundFontPath.setFont(juce::Font(11.0f));
     soundFontPath.setColour(juce::Label::textColourId, ProgFlowColours::textSecondary());
     soundFontPath.setJustificationType(juce::Justification::topLeft);
-    addAndMakeVisible(soundFontPath);
+    soundFontCard.addAndMakeVisible(soundFontPath);
 
     refreshFromSynth();
     updateSoundFontInfo();
@@ -85,10 +98,14 @@ SoundFontPlayerEditor::~SoundFontPlayerEditor()
 }
 
 void SoundFontPlayerEditor::setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                                       const juce::String& label, const juce::String& suffix)
+                                       const juce::String& label, const juce::String& suffix,
+                                       const juce::String& description)
 {
     knob.setLabel(label);
     knob.setValueSuffix(suffix);
+
+    if (description.isNotEmpty())
+        knob.setTooltipText(description);
 
     if (auto* param = synth.getParameterInfo(paramId))
     {
@@ -103,14 +120,6 @@ void SoundFontPlayerEditor::setupKnob(RotaryKnob& knob, const juce::String& para
     };
 
     addAndMakeVisible(knob);
-}
-
-void SoundFontPlayerEditor::createSectionLabel(juce::Label& label, const juce::String& text)
-{
-    label.setText(text.toUpperCase(), juce::dontSendNotification);
-    label.setFont(juce::Font(10.0f));
-    label.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
-    label.setJustificationType(juce::Justification::centredLeft);
 }
 
 void SoundFontPlayerEditor::populateCategories()
@@ -253,102 +262,66 @@ void SoundFontPlayerEditor::refreshFromSynth()
     instrumentSelector.setSelectedId(instrumentInCategory + 1, juce::dontSendNotification);
 }
 
-void SoundFontPlayerEditor::paint(juce::Graphics& g)
+void SoundFontPlayerEditor::layoutContent(juce::Rectangle<int> area)
 {
-    g.fillAll(ProgFlowColours::bgPrimary());
+    const int cardGap = 6;
+    const int knobHeight = RotaryKnob::TOTAL_HEIGHT;
 
-    const float cornerRadius = static_cast<float>(ProgFlowSpacing::SECTION_CORNER_RADIUS);
-    const int gap = ProgFlowSpacing::SM;
-    const int padding = ProgFlowSpacing::MD;
-    const int totalHeight = getHeight();
-    const int totalWidth = getWidth();
+    // Add Category/Instrument selectors to header area (where preset selector would be)
+    auto headerBounds = getLocalBounds().removeFromTop(HEADER_HEIGHT).reduced(SECTION_PADDING, 0);
+    auto selectorArea = headerBounds.reduced(0, 16);
+    categorySelector.setBounds(selectorArea.removeFromLeft(130).withHeight(28));
+    selectorArea.removeFromLeft(8);
+    instrumentSelector.setBounds(selectorArea.removeFromLeft(150).withHeight(28));
 
-    const int headerHeight = 44;
-    const int contentHeight = totalHeight - headerHeight - padding;
+    // Single row: Controls | Envelope | SoundFont
+    int totalWidth = area.getWidth();
+    int controlsWidth = (totalWidth - cardGap * 2) * 40 / 100;
+    int envWidth = (totalWidth - cardGap * 2) * 25 / 100;
+    int sfWidth = totalWidth - controlsWidth - envWidth - cardGap * 2;
 
-    const int contentStart = headerHeight;
-    const int col3Width = (totalWidth - padding * 2 - gap * 2) / 3;
+    //==========================================================================
+    // CONTROLS CARD (4 knobs: 2x2 grid)
+    //==========================================================================
+    auto controlsBounds = area.removeFromLeft(controlsWidth);
+    controlsCard.setBounds(controlsBounds);
+    auto controlsContent = controlsCard.getContentArea();
 
-    g.setColour(ProgFlowColours::sectionBg());
+    int knobSpacing = controlsContent.getWidth() / 2;
+    int halfHeight = controlsContent.getHeight() / 2;
 
-    // 3 sections in content row
-    for (int i = 0; i < 3; i++)
-    {
-        int x = padding + i * (col3Width + gap);
-        g.fillRoundedRectangle(static_cast<float>(x), static_cast<float>(contentStart),
-                               static_cast<float>(col3Width), static_cast<float>(contentHeight), cornerRadius);
-    }
+    auto topRow = controlsContent.removeFromTop(halfHeight);
+    volumeKnob.setBounds(topRow.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+    panKnob.setBounds(topRow.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+
+    pitchBendKnob.setBounds(controlsContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+    modWheelKnob.setBounds(controlsContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+
+    area.removeFromLeft(cardGap);
+
+    //==========================================================================
+    // ENVELOPE CARD
+    //==========================================================================
+    auto envBounds = area.removeFromLeft(envWidth);
+    envelopeCard.setBounds(envBounds);
+    auto envContent = envelopeCard.getContentArea();
+    knobSpacing = envContent.getWidth() / 2;
+    attackKnob.setBounds(envContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+    releaseKnob.setBounds(envContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+
+    area.removeFromLeft(cardGap);
+
+    //==========================================================================
+    // SOUNDFONT CARD
+    //==========================================================================
+    soundFontCard.setBounds(area);
+    auto sfContent = soundFontCard.getContentArea();
+    loadSF2Button.setBounds(sfContent.removeFromTop(28).removeFromLeft(110));
+    sfContent.removeFromTop(6);
+    soundFontPath.setBounds(sfContent);
 }
 
-void SoundFontPlayerEditor::resized()
+void SoundFontPlayerEditor::drawDividers(juce::Graphics& /*g*/, juce::Rectangle<int> /*area*/)
 {
-    const int margin = 6;
-    const int innerMargin = 4;
-    const int knobSize = 50;
-    const int labelHeight = 16;
-    const int comboHeight = 24;
-
-    auto bounds = getLocalBounds();
-
-    // ROW 0: Category, Instrument, Master
-    {
-        auto area = bounds.removeFromTop(40).reduced(margin);
-
-        // Category
-        categoryLabel.setBounds(area.removeFromLeft(70).withHeight(labelHeight));
-        categorySelector.setBounds(area.removeFromLeft(140).withHeight(comboHeight).withY(area.getY() + (area.getHeight() - comboHeight) / 2));
-
-        area.removeFromLeft(20);
-
-        // Instrument
-        instrumentLabel.setBounds(area.removeFromLeft(80).withHeight(labelHeight));
-        instrumentSelector.setBounds(area.removeFromLeft(180).withHeight(comboHeight).withY(area.getY() + (area.getHeight() - comboHeight) / 2));
-
-        // Master
-        auto masterArea = area.removeFromRight(80);
-        masterLabel.setBounds(masterArea.removeFromTop(labelHeight));
-        masterVolume.setBounds(masterArea.withSizeKeepingCentre(knobSize, knobSize));
-    }
-
-    // ROW 1: Controls | Envelope | SoundFont
-    {
-        auto row = bounds.reduced(margin, innerMargin);
-        int sectionWidth = row.getWidth() / 3;
-
-        // Controls
-        {
-            auto area = row.removeFromLeft(sectionWidth).reduced(innerMargin, 0);
-            controlsLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(4);
-
-            auto knobRow1 = area.removeFromTop(knobSize + 10);
-            volumeKnob.setBounds(knobRow1.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            panKnob.setBounds(knobRow1.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-
-            auto knobRow2 = area.removeFromTop(knobSize + 10);
-            pitchBendKnob.setBounds(knobRow2.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            modWheelKnob.setBounds(knobRow2.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-        }
-
-        // Envelope
-        {
-            auto area = row.removeFromLeft(sectionWidth).reduced(innerMargin, 0);
-            envelopeLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(4);
-
-            attackKnob.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            releaseKnob.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-        }
-
-        // SoundFont Info
-        {
-            auto area = row.reduced(innerMargin, 0);
-            soundFontLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(4);
-
-            loadSF2Button.setBounds(area.removeFromTop(28).withWidth(100));
-            area.removeFromTop(8);
-            soundFontPath.setBounds(area);
-        }
-    }
+    // No dividers needed - CardPanels handle their own styling
 }

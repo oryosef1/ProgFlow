@@ -3,72 +3,146 @@
 ProSynthEditor::ProSynthEditor(ProSynth& s)
     : SynthEditorBase(), synth(s)
 {
-    // Setup base class components
     presetSelector.addListener(this);
     populatePresets();
-    setupKnob(masterVolume, "master_volume", "Volume");
-    setupKnob(glideKnob, "glide", "Glide");
+    setupKnob(masterVolume, "master_volume", "Volume", "", "Master output volume");
 
-    // Initialize labels (will be positioned in layoutContent)
-    osc1Label.setText("OSC 1", juce::dontSendNotification);
-    osc2Label.setText("OSC 2", juce::dontSendNotification);
-    osc3Label.setText("OSC 3", juce::dontSendNotification);
-    subNoiseLabel.setText("SUB + NOISE", juce::dontSendNotification);
-    filter1Label.setText("FILTER", juce::dontSendNotification);
-    filterEnvLabel.setText("FILTER ENV", juce::dontSendNotification);
-    ampEnvLabel.setText("AMP ENV", juce::dontSendNotification);
-    unisonLabel.setText("UNISON", juce::dontSendNotification);
+    //==========================================================================
+    // CARD PANELS (no headers, compact padding for dense layout)
+    //==========================================================================
+    osc1Card.setShowHeader(false);
+    osc1Card.setPadding(4);
+    addAndMakeVisible(osc1Card);
 
-    // Oscillator 1
+    osc2Card.setShowHeader(false);
+    osc2Card.setPadding(4);
+    addAndMakeVisible(osc2Card);
+
+    osc3Card.setShowHeader(false);
+    osc3Card.setPadding(4);
+    addAndMakeVisible(osc3Card);
+
+    subNoiseCard.setShowHeader(false);
+    subNoiseCard.setPadding(4);
+    addAndMakeVisible(subNoiseCard);
+
+    filterCard.setShowHeader(false);
+    filterCard.setPadding(4);
+    addAndMakeVisible(filterCard);
+
+    filterEnvCard.setShowHeader(false);
+    filterEnvCard.setPadding(4);
+    addAndMakeVisible(filterEnvCard);
+
+    ampEnvCard.setShowHeader(false);
+    ampEnvCard.setPadding(4);
+    addAndMakeVisible(ampEnvCard);
+
+    unisonCard.setShowHeader(false);
+    unisonCard.setPadding(4);
+    addAndMakeVisible(unisonCard);
+
+    //==========================================================================
+    // OSCILLATOR 1
+    //==========================================================================
     setupComboBox(osc1Mode, "osc1_mode");
+    osc1Card.addAndMakeVisible(osc1Mode);
     setupComboBox(osc1Wave, "osc1_wave");
-    setupKnob(osc1Level, "osc1_level", "Level");
-    setupKnob(osc1Octave, "osc1_octave", "Oct");
-    setupKnob(osc1Fine, "osc1_fine", "Fine", " ct");
+    osc1Card.addAndMakeVisible(osc1Wave);
+    setupKnob(osc1Level, "osc1_level", "Lvl", "", "Oscillator 1 volume level");
+    osc1Card.addAndMakeVisible(osc1Level);
+    setupKnob(osc1Octave, "osc1_octave", "Oct", "", "Octave shift (-2 to +2)");
+    osc1Card.addAndMakeVisible(osc1Octave);
+    setupKnob(osc1Fine, "osc1_fine", "Fine", " ct", "Fine tuning in cents");
+    osc1Card.addAndMakeVisible(osc1Fine);
 
-    // Oscillator 2
+    //==========================================================================
+    // OSCILLATOR 2
+    //==========================================================================
     setupComboBox(osc2Mode, "osc2_mode");
+    osc2Card.addAndMakeVisible(osc2Mode);
     setupComboBox(osc2Wave, "osc2_wave");
-    setupKnob(osc2Level, "osc2_level", "Level");
-    setupKnob(osc2Octave, "osc2_octave", "Oct");
-    setupKnob(osc2Fine, "osc2_fine", "Fine", " ct");
+    osc2Card.addAndMakeVisible(osc2Wave);
+    setupKnob(osc2Level, "osc2_level", "Lvl", "", "Oscillator 2 volume level");
+    osc2Card.addAndMakeVisible(osc2Level);
+    setupKnob(osc2Octave, "osc2_octave", "Oct", "", "Octave shift (-2 to +2)");
+    osc2Card.addAndMakeVisible(osc2Octave);
+    setupKnob(osc2Fine, "osc2_fine", "Fine", " ct", "Fine tuning in cents");
+    osc2Card.addAndMakeVisible(osc2Fine);
 
-    // Oscillator 3
+    //==========================================================================
+    // OSCILLATOR 3
+    //==========================================================================
     setupComboBox(osc3Mode, "osc3_mode");
+    osc3Card.addAndMakeVisible(osc3Mode);
     setupComboBox(osc3Wave, "osc3_wave");
-    setupKnob(osc3Level, "osc3_level", "Level");
-    setupKnob(osc3Octave, "osc3_octave", "Oct");
-    setupKnob(osc3Fine, "osc3_fine", "Fine", " ct");
+    osc3Card.addAndMakeVisible(osc3Wave);
+    setupKnob(osc3Level, "osc3_level", "Lvl", "", "Oscillator 3 volume level");
+    osc3Card.addAndMakeVisible(osc3Level);
+    setupKnob(osc3Octave, "osc3_octave", "Oct", "", "Octave shift (-2 to +2)");
+    osc3Card.addAndMakeVisible(osc3Octave);
+    setupKnob(osc3Fine, "osc3_fine", "Fine", " ct", "Fine tuning in cents");
+    osc3Card.addAndMakeVisible(osc3Fine);
 
-    // Sub + Noise
+    //==========================================================================
+    // SUB + NOISE
+    //==========================================================================
     setupComboBox(subWave, "sub_wave");
-    setupKnob(subLevel, "sub_level", "Sub Lvl");
+    subNoiseCard.addAndMakeVisible(subWave);
+    setupKnob(subLevel, "sub_level", "Sub", "", "Sub oscillator level - adds bass");
+    subNoiseCard.addAndMakeVisible(subLevel);
     setupComboBox(noiseType, "noise_type");
-    setupKnob(noiseLevel, "noise_level", "Noise");
+    subNoiseCard.addAndMakeVisible(noiseType);
+    setupKnob(noiseLevel, "noise_level", "Noise", "", "Noise level - adds texture/air");
+    subNoiseCard.addAndMakeVisible(noiseLevel);
 
-    // Filter 1
+    //==========================================================================
+    // FILTER
+    //==========================================================================
     setupComboBox(filter1Model, "filter1_model");
+    filterCard.addAndMakeVisible(filter1Model);
     setupComboBox(filter1Type, "filter_type");
-    setupKnob(filterCutoff, "filter_cutoff", "Cutoff", " Hz");
-    setupKnob(filterResonance, "filter_resonance", "Res");
-    setupKnob(filterDrive, "filter_drive", "Drive");
+    filterCard.addAndMakeVisible(filter1Type);
+    setupKnob(filterCutoff, "filter_cutoff", "Cut", " Hz", "Filter cutoff frequency");
+    filterCard.addAndMakeVisible(filterCutoff);
+    setupKnob(filterResonance, "filter_resonance", "Res", "", "Resonance - emphasis at cutoff");
+    filterCard.addAndMakeVisible(filterResonance);
+    setupKnob(filterDrive, "filter_drive", "Drive", "", "Filter drive/saturation");
+    filterCard.addAndMakeVisible(filterDrive);
 
-    // Filter Envelope
-    setupKnob(filterEnvAttack, "filter_env_attack", "A", " s");
-    setupKnob(filterEnvDecay, "filter_env_decay", "D", " s");
-    setupKnob(filterEnvSustain, "filter_env_sustain", "S");
-    setupKnob(filterEnvRelease, "filter_env_release", "R", " s");
-    setupKnob(filterEnvAmount, "filter_env_amount", "Amt", " Hz");
+    //==========================================================================
+    // FILTER ENVELOPE
+    //==========================================================================
+    setupKnob(filterEnvAttack, "filter_env_attack", "A", " s", "Filter attack time");
+    filterEnvCard.addAndMakeVisible(filterEnvAttack);
+    setupKnob(filterEnvDecay, "filter_env_decay", "D", " s", "Filter decay time");
+    filterEnvCard.addAndMakeVisible(filterEnvDecay);
+    setupKnob(filterEnvSustain, "filter_env_sustain", "S", "", "Filter sustain level");
+    filterEnvCard.addAndMakeVisible(filterEnvSustain);
+    setupKnob(filterEnvRelease, "filter_env_release", "R", " s", "Filter release time");
+    filterEnvCard.addAndMakeVisible(filterEnvRelease);
+    setupKnob(filterEnvAmount, "filter_env_amount", "Amt", " Hz", "Envelope to cutoff amount");
+    filterEnvCard.addAndMakeVisible(filterEnvAmount);
 
-    // Amp Envelope
-    setupKnob(ampAttack, "amp_attack", "A", " s");
-    setupKnob(ampDecay, "amp_decay", "D", " s");
-    setupKnob(ampSustain, "amp_sustain", "S");
-    setupKnob(ampRelease, "amp_release", "R", " s");
+    //==========================================================================
+    // AMP ENVELOPE
+    //==========================================================================
+    setupKnob(ampAttack, "amp_attack", "A", " s", "Attack - time to full volume");
+    ampEnvCard.addAndMakeVisible(ampAttack);
+    setupKnob(ampDecay, "amp_decay", "D", " s", "Decay - time to sustain");
+    ampEnvCard.addAndMakeVisible(ampDecay);
+    setupKnob(ampSustain, "amp_sustain", "S", "", "Sustain level while held");
+    ampEnvCard.addAndMakeVisible(ampSustain);
+    setupKnob(ampRelease, "amp_release", "R", " s", "Release - fade after key up");
+    ampEnvCard.addAndMakeVisible(ampRelease);
 
-    // Unison
-    setupKnob(unisonVoices, "unison_voices", "Voices");
-    setupKnob(unisonDetune, "unison_detune", "Detune", " ct");
+    //==========================================================================
+    // UNISON
+    //==========================================================================
+    setupKnob(unisonVoices, "unison_voices", "Voices", "", "Number of unison voices (1-8)");
+    unisonCard.addAndMakeVisible(unisonVoices);
+    setupKnob(unisonDetune, "unison_detune", "Detune", " ct", "Unison detune spread");
+    unisonCard.addAndMakeVisible(unisonDetune);
 
     refreshFromSynth();
 }
@@ -89,10 +163,14 @@ ProSynthEditor::~ProSynthEditor()
 }
 
 void ProSynthEditor::setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                                const juce::String& label, const juce::String& suffix)
+                                const juce::String& label, const juce::String& suffix,
+                                const juce::String& description)
 {
     knob.setLabel(label);
     knob.setValueSuffix(suffix);
+
+    if (description.isNotEmpty())
+        knob.setTooltipText(description);
 
     if (auto* param = synth.getParameterInfo(paramId))
     {
@@ -159,9 +237,7 @@ void ProSynthEditor::populatePresets()
 
     int currentPreset = synth.getCurrentPresetIndex();
     if (currentPreset >= 0)
-    {
         presetSelector.setSelectedId(currentPreset + 1, juce::dontSendNotification);
-    }
     else if (!presets.empty())
     {
         synth.loadPreset(0);
@@ -183,62 +259,35 @@ void ProSynthEditor::refreshFromSynth()
             box.setSelectedId(param->enumIndex + 1, juce::dontSendNotification);
     };
 
-    // Master
     refreshKnob(masterVolume, "master_volume");
-    refreshKnob(glideKnob, "glide");
 
-    // Oscillator 1
-    refreshCombo(osc1Mode, "osc1_mode");
-    refreshCombo(osc1Wave, "osc1_wave");
-    refreshKnob(osc1Level, "osc1_level");
-    refreshKnob(osc1Octave, "osc1_octave");
-    refreshKnob(osc1Fine, "osc1_fine");
-
-    // Oscillator 2
-    refreshCombo(osc2Mode, "osc2_mode");
-    refreshCombo(osc2Wave, "osc2_wave");
-    refreshKnob(osc2Level, "osc2_level");
-    refreshKnob(osc2Octave, "osc2_octave");
-    refreshKnob(osc2Fine, "osc2_fine");
-
-    // Oscillator 3
-    refreshCombo(osc3Mode, "osc3_mode");
-    refreshCombo(osc3Wave, "osc3_wave");
-    refreshKnob(osc3Level, "osc3_level");
-    refreshKnob(osc3Octave, "osc3_octave");
-    refreshKnob(osc3Fine, "osc3_fine");
+    // OSC 1-3
+    refreshCombo(osc1Mode, "osc1_mode"); refreshCombo(osc1Wave, "osc1_wave");
+    refreshKnob(osc1Level, "osc1_level"); refreshKnob(osc1Octave, "osc1_octave"); refreshKnob(osc1Fine, "osc1_fine");
+    refreshCombo(osc2Mode, "osc2_mode"); refreshCombo(osc2Wave, "osc2_wave");
+    refreshKnob(osc2Level, "osc2_level"); refreshKnob(osc2Octave, "osc2_octave"); refreshKnob(osc2Fine, "osc2_fine");
+    refreshCombo(osc3Mode, "osc3_mode"); refreshCombo(osc3Wave, "osc3_wave");
+    refreshKnob(osc3Level, "osc3_level"); refreshKnob(osc3Octave, "osc3_octave"); refreshKnob(osc3Fine, "osc3_fine");
 
     // Sub + Noise
-    refreshCombo(subWave, "sub_wave");
-    refreshKnob(subLevel, "sub_level");
-    refreshCombo(noiseType, "noise_type");
-    refreshKnob(noiseLevel, "noise_level");
+    refreshCombo(subWave, "sub_wave"); refreshKnob(subLevel, "sub_level");
+    refreshCombo(noiseType, "noise_type"); refreshKnob(noiseLevel, "noise_level");
 
     // Filter
-    refreshCombo(filter1Model, "filter1_model");
-    refreshCombo(filter1Type, "filter_type");
-    refreshKnob(filterCutoff, "filter_cutoff");
-    refreshKnob(filterResonance, "filter_resonance");
+    refreshCombo(filter1Model, "filter1_model"); refreshCombo(filter1Type, "filter_type");
+    refreshKnob(filterCutoff, "filter_cutoff"); refreshKnob(filterResonance, "filter_resonance");
     refreshKnob(filterDrive, "filter_drive");
 
-    // Filter Envelope
-    refreshKnob(filterEnvAttack, "filter_env_attack");
-    refreshKnob(filterEnvDecay, "filter_env_decay");
-    refreshKnob(filterEnvSustain, "filter_env_sustain");
-    refreshKnob(filterEnvRelease, "filter_env_release");
+    // Envelopes
+    refreshKnob(filterEnvAttack, "filter_env_attack"); refreshKnob(filterEnvDecay, "filter_env_decay");
+    refreshKnob(filterEnvSustain, "filter_env_sustain"); refreshKnob(filterEnvRelease, "filter_env_release");
     refreshKnob(filterEnvAmount, "filter_env_amount");
-
-    // Amp Envelope
-    refreshKnob(ampAttack, "amp_attack");
-    refreshKnob(ampDecay, "amp_decay");
-    refreshKnob(ampSustain, "amp_sustain");
-    refreshKnob(ampRelease, "amp_release");
+    refreshKnob(ampAttack, "amp_attack"); refreshKnob(ampDecay, "amp_decay");
+    refreshKnob(ampSustain, "amp_sustain"); refreshKnob(ampRelease, "amp_release");
 
     // Unison
-    refreshKnob(unisonVoices, "unison_voices");
-    refreshKnob(unisonDetune, "unison_detune");
+    refreshKnob(unisonVoices, "unison_voices"); refreshKnob(unisonDetune, "unison_detune");
 
-    // Preset
     int currentPreset = synth.getCurrentPresetIndex();
     if (currentPreset >= 0)
         presetSelector.setSelectedId(currentPreset + 1, juce::dontSendNotification);
@@ -246,167 +295,131 @@ void ProSynthEditor::refreshFromSynth()
 
 void ProSynthEditor::layoutContent(juce::Rectangle<int> area)
 {
-    const int padding = SECTION_PADDING;
+    const int cardGap = 6;
+    const int knobHeight = RotaryKnob::TOTAL_HEIGHT;
     const int comboHeight = 22;
-    const int knobSpacing = 4;
+    const int smallKnob = 44;  // Smaller knobs for cramped spaces
 
-    area.reduce(padding, padding);
+    // Two rows - give more space to top row which has more content
+    int availableHeight = area.getHeight();
+    int topRowHeight = availableHeight * 60 / 100;  // 60% to top row
 
-    // Calculate section widths (8 sections: 3 OSCs + Sub/Noise + Filter + Filter Env + Amp Env + Unison)
-    const int totalWidth = area.getWidth();
-    const int sectionWidth = totalWidth / 8;
+    auto topRow = area.removeFromTop(topRowHeight);
+    area.removeFromTop(cardGap);
+    auto bottomRow = area;
 
-    sectionDividers.clear();
-
-    auto layoutOscSection = [&](juce::Rectangle<int> section, juce::Label& label,
-                                 juce::ComboBox& mode, juce::ComboBox& wave,
-                                 RotaryKnob& level, RotaryKnob& octave, RotaryKnob& fine)
+    //==========================================================================
+    // TOP ROW: OSC1 | OSC2 | OSC3 | SUB+NOISE | FILTER
+    //==========================================================================
     {
-        createSectionLabel(label, label.getText());
-        addAndMakeVisible(label);
-        label.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
+        int totalWidth = topRow.getWidth();
+        int oscWidth = (totalWidth - cardGap * 4) / 5;
 
-        // Mode and Wave dropdowns
-        auto comboRow = section.removeFromTop(comboHeight);
-        mode.setBounds(comboRow.removeFromLeft(comboRow.getWidth() / 2 - 2));
-        comboRow.removeFromLeft(4);
-        wave.setBounds(comboRow);
-        section.removeFromTop(knobSpacing);
+        // Helper to layout an OSC card with compact layout
+        auto layoutOscCard = [&](CardPanel& card, juce::ComboBox& mode, juce::ComboBox& wave,
+                                  RotaryKnob& level, RotaryKnob& octave, RotaryKnob& fine,
+                                  juce::Rectangle<int> bounds)
+        {
+            card.setBounds(bounds);
+            auto content = card.getContentArea();
 
-        // Knobs in rows
-        auto knobRow1 = section.removeFromTop(KNOB_SIZE);
-        level.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
-        octave.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
+            // Two dropdowns stacked vertically (more compact)
+            mode.setBounds(content.removeFromTop(comboHeight));
+            content.removeFromTop(2);
+            wave.setBounds(content.removeFromTop(comboHeight));
+            content.removeFromTop(6);
 
-        section.removeFromTop(knobSpacing);
-        auto knobRow2 = section.removeFromTop(KNOB_SIZE);
-        fine.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-    };
+            // 3 knobs: Level, Oct, Fine - use smaller size
+            int knobSpacing = content.getWidth() / 3;
+            level.setBounds(content.removeFromLeft(knobSpacing).withSizeKeepingCentre(smallKnob, knobHeight));
+            octave.setBounds(content.removeFromLeft(knobSpacing).withSizeKeepingCentre(smallKnob, knobHeight));
+            fine.setBounds(content.withSizeKeepingCentre(smallKnob, knobHeight));
+        };
 
-    // OSC 1
-    auto osc1Area = area.removeFromLeft(sectionWidth);
-    layoutOscSection(osc1Area, osc1Label, osc1Mode, osc1Wave, osc1Level, osc1Octave, osc1Fine);
-    sectionDividers.push_back(area.getX());
+        layoutOscCard(osc1Card, osc1Mode, osc1Wave, osc1Level, osc1Octave, osc1Fine,
+                      topRow.removeFromLeft(oscWidth));
+        topRow.removeFromLeft(cardGap);
 
-    // OSC 2
-    auto osc2Area = area.removeFromLeft(sectionWidth);
-    layoutOscSection(osc2Area, osc2Label, osc2Mode, osc2Wave, osc2Level, osc2Octave, osc2Fine);
-    sectionDividers.push_back(area.getX());
+        layoutOscCard(osc2Card, osc2Mode, osc2Wave, osc2Level, osc2Octave, osc2Fine,
+                      topRow.removeFromLeft(oscWidth));
+        topRow.removeFromLeft(cardGap);
 
-    // OSC 3
-    auto osc3Area = area.removeFromLeft(sectionWidth);
-    layoutOscSection(osc3Area, osc3Label, osc3Mode, osc3Wave, osc3Level, osc3Octave, osc3Fine);
-    sectionDividers.push_back(area.getX());
+        layoutOscCard(osc3Card, osc3Mode, osc3Wave, osc3Level, osc3Octave, osc3Fine,
+                      topRow.removeFromLeft(oscWidth));
+        topRow.removeFromLeft(cardGap);
 
-    // SUB + NOISE
-    {
-        auto section = area.removeFromLeft(sectionWidth);
-        createSectionLabel(subNoiseLabel, "SUB + NOISE");
-        addAndMakeVisible(subNoiseLabel);
-        subNoiseLabel.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
+        // SUB + NOISE card
+        auto subBounds = topRow.removeFromLeft(oscWidth);
+        subNoiseCard.setBounds(subBounds);
+        auto subContent = subNoiseCard.getContentArea();
+        subWave.setBounds(subContent.removeFromTop(comboHeight));
+        subContent.removeFromTop(2);
+        noiseType.setBounds(subContent.removeFromTop(comboHeight));
+        subContent.removeFromTop(6);
+        int knobSpacing = subContent.getWidth() / 2;
+        subLevel.setBounds(subContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(smallKnob, knobHeight));
+        noiseLevel.setBounds(subContent.withSizeKeepingCentre(smallKnob, knobHeight));
 
-        auto comboRow1 = section.removeFromTop(comboHeight);
-        subWave.setBounds(comboRow1);
-        section.removeFromTop(knobSpacing);
+        topRow.removeFromLeft(cardGap);
 
-        auto comboRow2 = section.removeFromTop(comboHeight);
-        noiseType.setBounds(comboRow2);
-        section.removeFromTop(knobSpacing);
-
-        auto knobRow = section.removeFromTop(KNOB_SIZE);
-        subLevel.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
-        noiseLevel.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
+        // FILTER card
+        auto filterBounds = topRow;
+        filterCard.setBounds(filterBounds);
+        auto filterContent = filterCard.getContentArea();
+        filter1Model.setBounds(filterContent.removeFromTop(comboHeight));
+        filterContent.removeFromTop(2);
+        filter1Type.setBounds(filterContent.removeFromTop(comboHeight));
+        filterContent.removeFromTop(6);
+        knobSpacing = filterContent.getWidth() / 3;
+        filterCutoff.setBounds(filterContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(smallKnob, knobHeight));
+        filterResonance.setBounds(filterContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(smallKnob, knobHeight));
+        filterDrive.setBounds(filterContent.withSizeKeepingCentre(smallKnob, knobHeight));
     }
-    sectionDividers.push_back(area.getX());
 
-    // FILTER
+    //==========================================================================
+    // BOTTOM ROW: FILTER ENV | AMP ENV | UNISON
+    //==========================================================================
     {
-        auto section = area.removeFromLeft(sectionWidth);
-        createSectionLabel(filter1Label, "FILTER");
-        addAndMakeVisible(filter1Label);
-        filter1Label.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
+        int totalWidth = bottomRow.getWidth();
+        int envWidth = (totalWidth - cardGap * 2) * 40 / 100;
+        int unisonWidth = totalWidth - envWidth * 2 - cardGap * 2;
 
-        auto comboRow1 = section.removeFromTop(comboHeight);
-        filter1Model.setBounds(comboRow1);
-        section.removeFromTop(knobSpacing);
+        // Filter Envelope card (5 knobs: ADSR + Amount)
+        auto filterEnvBounds = bottomRow.removeFromLeft(envWidth);
+        filterEnvCard.setBounds(filterEnvBounds);
+        auto fenvContent = filterEnvCard.getContentArea();
+        int knobSpacing = fenvContent.getWidth() / 5;
+        filterEnvAttack.setBounds(fenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterEnvDecay.setBounds(fenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterEnvSustain.setBounds(fenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterEnvRelease.setBounds(fenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterEnvAmount.setBounds(fenvContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
 
-        auto comboRow2 = section.removeFromTop(comboHeight);
-        filter1Type.setBounds(comboRow2);
-        section.removeFromTop(knobSpacing);
+        bottomRow.removeFromLeft(cardGap);
 
-        auto knobRow = section.removeFromTop(KNOB_SIZE);
-        filterCutoff.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
-        filterResonance.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
+        // Amp Envelope card (4 knobs: ADSR)
+        auto ampEnvBounds = bottomRow.removeFromLeft(envWidth);
+        ampEnvCard.setBounds(ampEnvBounds);
+        auto aenvContent = ampEnvCard.getContentArea();
+        knobSpacing = aenvContent.getWidth() / 4;
+        ampAttack.setBounds(aenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampDecay.setBounds(aenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampSustain.setBounds(aenvContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampRelease.setBounds(aenvContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
 
-        section.removeFromTop(knobSpacing);
-        auto knobRow2 = section.removeFromTop(KNOB_SIZE);
-        filterDrive.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-    }
-    sectionDividers.push_back(area.getX());
+        bottomRow.removeFromLeft(cardGap);
 
-    // FILTER ENVELOPE
-    {
-        auto section = area.removeFromLeft(sectionWidth);
-        createSectionLabel(filterEnvLabel, "FILTER ENV");
-        addAndMakeVisible(filterEnvLabel);
-        filterEnvLabel.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
-
-        auto knobRow1 = section.removeFromTop(KNOB_SIZE);
-        filterEnvAttack.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
-        filterEnvDecay.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
-
-        section.removeFromTop(knobSpacing);
-        auto knobRow2 = section.removeFromTop(KNOB_SIZE);
-        filterEnvSustain.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-        filterEnvRelease.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-
-        section.removeFromTop(knobSpacing);
-        auto knobRow3 = section.removeFromTop(KNOB_SIZE);
-        filterEnvAmount.setBounds(knobRow3.removeFromLeft(KNOB_SIZE));
-    }
-    sectionDividers.push_back(area.getX());
-
-    // AMP ENVELOPE
-    {
-        auto section = area.removeFromLeft(sectionWidth);
-        createSectionLabel(ampEnvLabel, "AMP ENV");
-        addAndMakeVisible(ampEnvLabel);
-        ampEnvLabel.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
-
-        auto knobRow1 = section.removeFromTop(KNOB_SIZE);
-        ampAttack.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
-        ampDecay.setBounds(knobRow1.removeFromLeft(KNOB_SIZE));
-
-        section.removeFromTop(knobSpacing);
-        auto knobRow2 = section.removeFromTop(KNOB_SIZE);
-        ampSustain.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-        ampRelease.setBounds(knobRow2.removeFromLeft(KNOB_SIZE));
-    }
-    sectionDividers.push_back(area.getX());
-
-    // UNISON
-    {
-        auto section = area;
-        createSectionLabel(unisonLabel, "UNISON");
-        addAndMakeVisible(unisonLabel);
-        unisonLabel.setBounds(section.removeFromTop(16));
-        section.removeFromTop(4);
-
-        auto knobRow = section.removeFromTop(KNOB_SIZE);
-        unisonVoices.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
-        unisonDetune.setBounds(knobRow.removeFromLeft(KNOB_SIZE));
+        // Unison card (2 knobs)
+        auto unisonBounds = bottomRow;
+        unisonCard.setBounds(unisonBounds);
+        auto uniContent = unisonCard.getContentArea();
+        knobSpacing = uniContent.getWidth() / 2;
+        unisonVoices.setBounds(uniContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        unisonDetune.setBounds(uniContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
     }
 }
 
-void ProSynthEditor::drawDividers(juce::Graphics& g, juce::Rectangle<int> area)
+void ProSynthEditor::drawDividers(juce::Graphics& /*g*/, juce::Rectangle<int> /*area*/)
 {
-    for (int x : sectionDividers)
-    {
-        drawVerticalDivider(g, x, area.getY(), area.getBottom());
-    }
+    // No dividers needed - CardPanels handle their own styling
 }

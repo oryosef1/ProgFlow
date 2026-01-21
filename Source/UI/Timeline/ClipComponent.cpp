@@ -48,13 +48,13 @@ void ClipComponent::paint(juce::Graphics& g)
 
     juce::Colour clipColour = clip.getColour();
 
-    // Selection glow effect (drawn first, behind the clip)
+    // Selection glow effect (drawn first, behind the clip) - Saturn purple accent
     if (selected)
     {
-        // Draw outer glow
-        g.setColour(juce::Colours::white.withAlpha(0.15f));
+        // Draw outer glow with Saturn accent
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.3f));
         g.fillRoundedRectangle(bounds.toFloat().expanded(3.0f), 6.0f);
-        g.setColour(juce::Colours::white.withAlpha(0.1f));
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.15f));
         g.fillRoundedRectangle(bounds.toFloat().expanded(6.0f), 8.0f);
     }
 

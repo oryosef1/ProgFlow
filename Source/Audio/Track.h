@@ -86,9 +86,9 @@ public:
     SynthType getSynthType() const { return synthType; }
     void setSynthType(SynthType type);
 
-    // Synth MIDI control
-    void synthNoteOn(int midiNote, float velocity);
-    void synthNoteOff(int midiNote);
+    // Synth MIDI control (with optional sample offset for accurate timing)
+    void synthNoteOn(int midiNote, float velocity, int sampleOffset = 0);
+    void synthNoteOff(int midiNote, int sampleOffset = 0);
     void synthAllNotesOff();
 
     //==========================================================================

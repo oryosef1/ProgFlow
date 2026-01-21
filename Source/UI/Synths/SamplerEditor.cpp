@@ -1,85 +1,114 @@
 #include "SamplerEditor.h"
 
 SamplerEditor::SamplerEditor(Sampler& s)
-    : synth(s)
+    : SynthEditorBase(), synth(s)
 {
-    // Preset Section
-    createSectionLabel(presetLabel, "PRESET");
-    addAndMakeVisible(presetLabel);
-
+    // Setup preset selector and master volume (from base class)
     presetSelector.addListener(this);
-    addAndMakeVisible(presetSelector);
     populatePresets();
+    setupKnob(masterVolume, "master_volume", "Volume", "", "Master output volume");
 
-    // Master Volume
-    createSectionLabel(masterLabel, "MASTER");
-    addAndMakeVisible(masterLabel);
-    setupKnob(masterVolume, "master_volume", "Volume");
+    //==========================================================================
+    // CARD PANELS (Saturn design - no headers for compact layout)
+    //==========================================================================
+    playbackCard.setShowHeader(false);
+    playbackCard.setPadding(6);
+    addAndMakeVisible(playbackCard);
 
-    // Playback Section
-    createSectionLabel(playbackLabel, "PLAYBACK");
-    addAndMakeVisible(playbackLabel);
+    filterCard.setShowHeader(false);
+    filterCard.setPadding(6);
+    addAndMakeVisible(filterCard);
 
-    setupKnob(transposeKnob, "transpose", "Trans", " st");
-    setupKnob(fineTuneKnob, "fine_tune", "Fine", " ct");
-    setupKnob(startKnob, "start", "Start");
+    ampEnvCard.setShowHeader(false);
+    ampEnvCard.setPadding(6);
+    addAndMakeVisible(ampEnvCard);
+
+    filterEnvCard.setShowHeader(false);
+    filterEnvCard.setPadding(6);
+    addAndMakeVisible(filterEnvCard);
+
+    sampleInfoCard.setShowHeader(false);
+    sampleInfoCard.setPadding(6);
+    addAndMakeVisible(sampleInfoCard);
+
+    //==========================================================================
+    // PLAYBACK
+    //==========================================================================
+    setupKnob(transposeKnob, "transpose", "Trans", " st", "Transpose - shift pitch in semitones");
+    playbackCard.addAndMakeVisible(transposeKnob);
+    setupKnob(fineTuneKnob, "fine_tune", "Fine", " ct", "Fine tune - subtle pitch adjustment in cents");
+    playbackCard.addAndMakeVisible(fineTuneKnob);
+    setupKnob(startKnob, "start", "Start", "", "Sample start position");
+    playbackCard.addAndMakeVisible(startKnob);
     setupComboBox(loopModeSelector, "loop_mode");
+    playbackCard.addAndMakeVisible(loopModeSelector);
 
-    // Filter Section
-    createSectionLabel(filterLabel, "FILTER");
-    addAndMakeVisible(filterLabel);
+    //==========================================================================
+    // FILTER
+    //==========================================================================
+    setupKnob(filterCutoff, "filter_cutoff", "Cut", " Hz", "Filter cutoff frequency - lower = darker sound");
+    filterCard.addAndMakeVisible(filterCutoff);
+    setupKnob(filterResonance, "filter_resonance", "Res", "", "Resonance - boost at cutoff frequency");
+    filterCard.addAndMakeVisible(filterResonance);
+    setupKnob(filterEnvAmount, "filter_env_amount", "Env", " Hz", "How much filter envelope affects cutoff");
+    filterCard.addAndMakeVisible(filterEnvAmount);
 
-    setupKnob(filterCutoff, "filter_cutoff", "Cutoff", " Hz");
-    setupKnob(filterResonance, "filter_resonance", "Res");
-    setupKnob(filterEnvAmount, "filter_env_amount", "Env", " Hz");
+    //==========================================================================
+    // AMP ENVELOPE
+    //==========================================================================
+    setupKnob(ampAttack, "amp_attack", "A", " s", "Attack - time to reach full volume");
+    ampEnvCard.addAndMakeVisible(ampAttack);
+    setupKnob(ampDecay, "amp_decay", "D", " s", "Decay - time to fall to sustain level");
+    ampEnvCard.addAndMakeVisible(ampDecay);
+    setupKnob(ampSustain, "amp_sustain", "S", "", "Sustain - volume while key is held");
+    ampEnvCard.addAndMakeVisible(ampSustain);
+    setupKnob(ampRelease, "amp_release", "R", " s", "Release - time to fade after key release");
+    ampEnvCard.addAndMakeVisible(ampRelease);
 
-    // Amp Envelope
-    createSectionLabel(ampEnvLabel, "AMP ENV");
-    addAndMakeVisible(ampEnvLabel);
+    //==========================================================================
+    // FILTER ENVELOPE
+    //==========================================================================
+    setupKnob(filterAttack, "filter_attack", "A", " s", "Filter attack - cutoff sweep time");
+    filterEnvCard.addAndMakeVisible(filterAttack);
+    setupKnob(filterDecay, "filter_decay", "D", " s", "Filter decay - time to sustain");
+    filterEnvCard.addAndMakeVisible(filterDecay);
+    setupKnob(filterSustain, "filter_sustain", "S", "", "Filter sustain level");
+    filterEnvCard.addAndMakeVisible(filterSustain);
+    setupKnob(filterRelease, "filter_release", "R", " s", "Filter release time");
+    filterEnvCard.addAndMakeVisible(filterRelease);
 
-    setupKnob(ampAttack, "amp_attack", "A", " s");
-    setupKnob(ampDecay, "amp_decay", "D", " s");
-    setupKnob(ampSustain, "amp_sustain", "S");
-    setupKnob(ampRelease, "amp_release", "R", " s");
-
-    // Filter Envelope
-    createSectionLabel(filterEnvLabel, "FILTER ENV");
-    addAndMakeVisible(filterEnvLabel);
-
-    setupKnob(filterAttack, "filter_attack", "A", " s");
-    setupKnob(filterDecay, "filter_decay", "D", " s");
-    setupKnob(filterSustain, "filter_sustain", "S");
-    setupKnob(filterRelease, "filter_release", "R", " s");
-
-    // Sample Info
-    createSectionLabel(sampleInfoLabel, "SAMPLE");
-    addAndMakeVisible(sampleInfoLabel);
-
+    //==========================================================================
+    // SAMPLE INFO
+    //==========================================================================
     loadSampleButton.setButtonText("Load Sample...");
     loadSampleButton.addListener(this);
-    addAndMakeVisible(loadSampleButton);
+    sampleInfoCard.addAndMakeVisible(loadSampleButton);
 
     sampleInfoText.setFont(juce::Font(11.0f));
     sampleInfoText.setColour(juce::Label::textColourId, ProgFlowColours::textSecondary());
     sampleInfoText.setJustificationType(juce::Justification::topLeft);
-    addAndMakeVisible(sampleInfoText);
+    sampleInfoCard.addAndMakeVisible(sampleInfoText);
 
+    // Initial refresh
     refreshFromSynth();
     updateSampleInfo();
 }
 
 SamplerEditor::~SamplerEditor()
 {
-    presetSelector.removeListener(this);
     loopModeSelector.removeListener(this);
     loadSampleButton.removeListener(this);
 }
 
 void SamplerEditor::setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                               const juce::String& label, const juce::String& suffix)
+                               const juce::String& label, const juce::String& suffix,
+                               const juce::String& description)
 {
     knob.setLabel(label);
     knob.setValueSuffix(suffix);
+
+    if (description.isNotEmpty())
+        knob.setTooltipText(description);
 
     if (auto* param = synth.getParameterInfo(paramId))
     {
@@ -110,14 +139,6 @@ void SamplerEditor::setupComboBox(juce::ComboBox& box, const juce::String& param
 
     box.addListener(this);
     addAndMakeVisible(box);
-}
-
-void SamplerEditor::createSectionLabel(juce::Label& label, const juce::String& text)
-{
-    label.setText(text.toUpperCase(), juce::dontSendNotification);
-    label.setFont(juce::Font(10.0f));
-    label.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
-    label.setJustificationType(juce::Justification::centredLeft);
 }
 
 void SamplerEditor::comboBoxChanged(juce::ComboBox* box)
@@ -274,128 +295,93 @@ void SamplerEditor::refreshFromSynth()
         presetSelector.setSelectedId(currentPreset + 1, juce::dontSendNotification);
 }
 
-void SamplerEditor::paint(juce::Graphics& g)
+void SamplerEditor::layoutContent(juce::Rectangle<int> area)
 {
-    g.fillAll(ProgFlowColours::bgSecondary());
+    const int cardGap = 6;
+    const int knobHeight = RotaryKnob::TOTAL_HEIGHT;
+    const int comboHeight = 28;
 
-    // Calculate proportional heights
-    const int totalHeight = getHeight();
-    const int headerHeight = 36;
-    const int row1Height = (totalHeight - headerHeight) * 55 / 100;
+    // Two rows: Top row (Playback, Filter, Amp Env), Bottom row (Filter Env, Sample Info)
+    int availableHeight = area.getHeight();
+    int topRowHeight = juce::jmin(110, availableHeight / 2);
 
-    const int row1 = headerHeight;
-    const int row2 = row1 + row1Height;
+    auto topRow = area.removeFromTop(topRowHeight);
+    area.removeFromTop(cardGap);
+    auto bottomRow = area;
 
-    g.setColour(ProgFlowColours::border());
+    //==========================================================================
+    // TOP ROW: Playback, Filter, Amp Env
+    //==========================================================================
+    {
+        int totalWidth = topRow.getWidth();
+        int playbackWidth = (totalWidth - cardGap * 2) * 35 / 100;
+        int filterWidth = (totalWidth - cardGap * 2) * 30 / 100;
+        int ampWidth = totalWidth - playbackWidth - filterWidth - cardGap * 2;
 
-    // Horizontal dividers
-    g.drawHorizontalLine(row1, 0.0f, static_cast<float>(getWidth()));
-    g.drawHorizontalLine(row2, 0.0f, static_cast<float>(getWidth()));
+        // Playback card
+        auto playbackBounds = topRow.removeFromLeft(playbackWidth);
+        playbackCard.setBounds(playbackBounds);
+        auto playbackContent = playbackCard.getContentArea();
+        int knobSpacing = playbackContent.getWidth() / 4;
+        transposeKnob.setBounds(playbackContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        fineTuneKnob.setBounds(playbackContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        startKnob.setBounds(playbackContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        loopModeSelector.setBounds(playbackContent.withSizeKeepingCentre(80, comboHeight));
 
-    // Vertical dividers in row 1
-    int sectionWidth = getWidth() / 3;
-    g.drawVerticalLine(sectionWidth, static_cast<float>(row1), static_cast<float>(row2));
-    g.drawVerticalLine(sectionWidth * 2, static_cast<float>(row1), static_cast<float>(row2));
+        topRow.removeFromLeft(cardGap);
 
-    // Vertical dividers in row 2
-    g.drawVerticalLine(getWidth() / 2, static_cast<float>(row2), static_cast<float>(getHeight()));
+        // Filter card
+        auto filterBounds = topRow.removeFromLeft(filterWidth);
+        filterCard.setBounds(filterBounds);
+        auto filterContent = filterCard.getContentArea();
+        knobSpacing = filterContent.getWidth() / 3;
+        filterCutoff.setBounds(filterContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterResonance.setBounds(filterContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterEnvAmount.setBounds(filterContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+
+        topRow.removeFromLeft(cardGap);
+
+        // Amp Envelope card
+        auto ampBounds = topRow;
+        ampEnvCard.setBounds(ampBounds);
+        auto ampContent = ampEnvCard.getContentArea();
+        knobSpacing = ampContent.getWidth() / 4;
+        ampAttack.setBounds(ampContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampDecay.setBounds(ampContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampSustain.setBounds(ampContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        ampRelease.setBounds(ampContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+    }
+
+    //==========================================================================
+    // BOTTOM ROW: Filter Env, Sample Info
+    //==========================================================================
+    {
+        int totalWidth = bottomRow.getWidth();
+        int envWidth = (totalWidth - cardGap) / 2;
+
+        // Filter Envelope card
+        auto fltBounds = bottomRow.removeFromLeft(envWidth);
+        filterEnvCard.setBounds(fltBounds);
+        auto fltContent = filterEnvCard.getContentArea();
+        int knobSpacing = fltContent.getWidth() / 4;
+        filterAttack.setBounds(fltContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterDecay.setBounds(fltContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterSustain.setBounds(fltContent.removeFromLeft(knobSpacing).withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+        filterRelease.setBounds(fltContent.withSizeKeepingCentre(KNOB_SIZE, knobHeight));
+
+        bottomRow.removeFromLeft(cardGap);
+
+        // Sample Info card
+        auto sampleBounds = bottomRow;
+        sampleInfoCard.setBounds(sampleBounds);
+        auto sampleContent = sampleInfoCard.getContentArea();
+        loadSampleButton.setBounds(sampleContent.removeFromTop(28).removeFromLeft(120));
+        sampleContent.removeFromTop(4);
+        sampleInfoText.setBounds(sampleContent);
+    }
 }
 
-void SamplerEditor::resized()
+void SamplerEditor::drawDividers(juce::Graphics& /*g*/, juce::Rectangle<int> /*area*/)
 {
-    const int margin = 6;
-    const int innerMargin = 4;
-    const int knobSize = 50;
-    const int labelHeight = 16;
-    const int comboHeight = 22;
-
-    auto bounds = getLocalBounds();
-    const int totalHeight = bounds.getHeight();
-
-    // Calculate row heights proportionally
-    const int headerHeight = 36;
-    const int row1Height = (totalHeight - headerHeight) * 55 / 100;
-
-    // ROW 0: Preset & Master
-    {
-        auto area = bounds.removeFromTop(headerHeight).reduced(margin);
-
-        presetLabel.setBounds(area.removeFromLeft(55).withHeight(labelHeight));
-        presetSelector.setBounds(area.removeFromLeft(180).withHeight(comboHeight).withY(area.getY() + (area.getHeight() - comboHeight) / 2));
-
-        auto masterArea = area.removeFromRight(80);
-        masterLabel.setBounds(masterArea.removeFromTop(labelHeight));
-        masterVolume.setBounds(masterArea.withSizeKeepingCentre(knobSize, knobSize));
-    }
-
-    // ROW 1: Playback | Filter | Amp Env
-    {
-        auto row = bounds.removeFromTop(row1Height).reduced(margin, innerMargin);
-        int sectionWidth = row.getWidth() / 3;
-
-        // Playback
-        {
-            auto area = row.removeFromLeft(sectionWidth).reduced(innerMargin, 0);
-            playbackLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(2);
-
-            auto knobRow1 = area.removeFromTop(knobSize);
-            transposeKnob.setBounds(knobRow1.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            fineTuneKnob.setBounds(knobRow1.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-
-            area.removeFromTop(2);
-            startKnob.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            loopModeSelector.setBounds(area.removeFromLeft(90).withHeight(comboHeight).withY(area.getY() + 12));
-        }
-
-        // Filter
-        {
-            auto area = row.removeFromLeft(sectionWidth).reduced(innerMargin, 0);
-            filterLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(2);
-
-            filterCutoff.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            filterResonance.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            filterEnvAmount.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-        }
-
-        // Amp Envelope
-        {
-            auto area = row.reduced(innerMargin, 0);
-            ampEnvLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(2);
-
-            ampAttack.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            ampDecay.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            ampSustain.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            ampRelease.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-        }
-    }
-
-    // ROW 2: Filter Env | Sample Info
-    {
-        auto row = bounds.reduced(margin, innerMargin);
-
-        // Filter Envelope
-        {
-            auto area = row.removeFromLeft(row.getWidth() / 2).reduced(innerMargin, 0);
-            filterEnvLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(2);
-
-            filterAttack.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            filterDecay.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            filterSustain.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-            filterRelease.setBounds(area.removeFromLeft(knobSize).withSizeKeepingCentre(knobSize, knobSize));
-        }
-
-        // Sample Info
-        {
-            auto area = row.reduced(innerMargin, 0);
-            sampleInfoLabel.setBounds(area.removeFromTop(labelHeight));
-            area.removeFromTop(4);
-            loadSampleButton.setBounds(area.removeFromTop(26).withWidth(110));
-            area.removeFromTop(6);
-            sampleInfoText.setBounds(area);
-        }
-    }
+    // No dividers needed - CardPanels handle their own styling
 }

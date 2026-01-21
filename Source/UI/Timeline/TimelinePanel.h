@@ -10,6 +10,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include <random>
 
 // Forward declaration
 class TimelinePanel;
@@ -101,6 +102,7 @@ public:
     //==========================================================================
     // Component overrides
     void paint(juce::Graphics& g) override;
+    void paintOverChildren(juce::Graphics& g) override;
     void resized() override;
     void mouseDown(const juce::MouseEvent& e) override;
     void mouseDrag(const juce::MouseEvent& e) override;
@@ -167,6 +169,21 @@ private:
     void handleAudioFileDropped(Track* track, const juce::File& file, double beatPosition);
     std::set<MidiClip*> getClipsInRect(const juce::Rectangle<int>& rect) const;
     void drawMarqueeSelection(juce::Graphics& g);
+
+    // Background animation
+    struct Particle {
+        float x, y;
+        float vx, vy;
+        float size;
+        float alpha;
+    };
+    std::vector<Particle> particles;
+    float animationTime = 0.0f;
+    std::mt19937 animRng{std::random_device{}()};
+    void initParticles();
+    void updateParticles();
+    void drawParticles(juce::Graphics& g);
+    void drawWaveform(juce::Graphics& g);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TimelinePanel)
 };

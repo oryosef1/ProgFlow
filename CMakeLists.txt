@@ -63,9 +63,6 @@ target_sources(ProgFlow PRIVATE
     Source/Audio/Synths/SynthFactory.cpp
     Source/Audio/Synths/AnalogSynth.cpp
     Source/Audio/Synths/FMSynth.cpp
-    Source/Audio/Synths/PolyPadSynth.cpp
-    Source/Audio/Synths/OrganSynth.cpp
-    Source/Audio/Synths/StringSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynthParams.cpp
     Source/Audio/Synths/ProSynth/WavetableOsc.cpp
@@ -114,6 +111,7 @@ target_sources(ProgFlow PRIVATE
     Source/UI/Common/WaveSelector.cpp
     Source/UI/Common/SectionPanel.cpp
     Source/UI/Common/GlassPanel.cpp
+    Source/UI/Common/CardPanel.cpp
     Source/UI/Common/EnvelopeVisualizer.cpp
     Source/UI/Common/ResizablePanel.cpp
     Source/UI/Tracks/TrackHeader.cpp
@@ -124,9 +122,6 @@ target_sources(ProgFlow PRIVATE
     Source/UI/Synths/SynthEditorBase.cpp
     Source/UI/Synths/AnalogSynthEditor.cpp
     Source/UI/Synths/FMSynthEditor.cpp
-    Source/UI/Synths/PolyPadSynthEditor.cpp
-    Source/UI/Synths/OrganSynthEditor.cpp
-    Source/UI/Synths/StringSynthEditor.cpp
     Source/UI/Synths/ProSynthEditor.cpp
     Source/UI/Synths/SamplerEditor.cpp
     Source/UI/Synths/SoundFontPlayerEditor.cpp
@@ -186,12 +181,15 @@ target_link_libraries(ProgFlow PRIVATE
     $<$<PLATFORM_ID:Darwin>:${ACCELERATE_FRAMEWORK}>
 )
 
-# Optional: Bundle SoundFont if present in Resources folder
-# To use: place a GM SoundFont at Resources/GeneralUser.sf2
+# Bundle SoundFont if present in Resources folder
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2")
     message(STATUS "Found SoundFont: Resources/GeneralUser.sf2 - will be bundled")
-    set_target_properties(ProgFlow PROPERTIES
-        RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2"
+    # Copy SF2 to app bundle after build
+    add_custom_command(TARGET ProgFlow POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/Resources/GeneralUser.sf2"
+            "$<TARGET_BUNDLE_DIR:ProgFlow>/Contents/Resources/GeneralUser.sf2"
+        COMMENT "Bundling GeneralUser.sf2 SoundFont"
     )
 endif()
 
@@ -238,9 +236,6 @@ target_sources(ProgFlowPlugin PRIVATE
     Source/Audio/Synths/SynthFactory.cpp
     Source/Audio/Synths/AnalogSynth.cpp
     Source/Audio/Synths/FMSynth.cpp
-    Source/Audio/Synths/PolyPadSynth.cpp
-    Source/Audio/Synths/OrganSynth.cpp
-    Source/Audio/Synths/StringSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynthParams.cpp
     Source/Audio/Synths/ProSynth/WavetableOsc.cpp
@@ -279,6 +274,7 @@ target_sources(ProgFlowPlugin PRIVATE
     Source/UI/Common/WaveSelector.cpp
     Source/UI/Common/SectionPanel.cpp
     Source/UI/Common/GlassPanel.cpp
+    Source/UI/Common/CardPanel.cpp
     Source/UI/Common/EnvelopeVisualizer.cpp
     Source/UI/Common/ResizablePanel.cpp
     Source/UI/Tracks/TrackHeader.cpp
@@ -289,9 +285,6 @@ target_sources(ProgFlowPlugin PRIVATE
     Source/UI/Synths/SynthEditorBase.cpp
     Source/UI/Synths/AnalogSynthEditor.cpp
     Source/UI/Synths/FMSynthEditor.cpp
-    Source/UI/Synths/PolyPadSynthEditor.cpp
-    Source/UI/Synths/OrganSynthEditor.cpp
-    Source/UI/Synths/StringSynthEditor.cpp
     Source/UI/Synths/ProSynthEditor.cpp
     Source/UI/Synths/SamplerEditor.cpp
     Source/UI/Synths/SoundFontPlayerEditor.cpp
@@ -379,9 +372,6 @@ target_sources(ProgFlowTests PRIVATE
     Source/Audio/Synths/SynthFactory.cpp
     Source/Audio/Synths/AnalogSynth.cpp
     Source/Audio/Synths/FMSynth.cpp
-    Source/Audio/Synths/PolyPadSynth.cpp
-    Source/Audio/Synths/OrganSynth.cpp
-    Source/Audio/Synths/StringSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynth.cpp
     Source/Audio/Synths/ProSynth/ProSynthParams.cpp
     Source/Audio/Synths/ProSynth/WavetableOsc.cpp

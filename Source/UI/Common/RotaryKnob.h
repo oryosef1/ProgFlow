@@ -20,11 +20,12 @@ class RotaryKnob : public juce::Component,
                    public juce::TooltipClient
 {
 public:
-    // Modern design sizes
-    static constexpr int KNOB_DIAMETER = 52;
-    static constexpr int LABEL_HEIGHT = 18;
-    static constexpr int LABEL_GAP = 6;
-    static constexpr int TOTAL_HEIGHT = KNOB_DIAMETER + LABEL_GAP + LABEL_HEIGHT; // 76px
+    // Saturn design sizes
+    static constexpr int KNOB_DIAMETER = 48;
+    static constexpr int LABEL_HEIGHT = 14;
+    static constexpr int VALUE_HEIGHT = 14;
+    static constexpr int LABEL_GAP = 4;
+    static constexpr int TOTAL_HEIGHT = KNOB_DIAMETER + LABEL_GAP + LABEL_HEIGHT + VALUE_HEIGHT; // 80px
 
     RotaryKnob(const juce::String& name = "");
     ~RotaryKnob() override;
@@ -121,6 +122,10 @@ private:
     // Layout areas (calculated in resized())
     juce::Rectangle<int> knobArea;
     juce::Rectangle<int> labelArea;
+    juce::Rectangle<int> valueArea;
+
+    // Format value for display
+    juce::String getFormattedValue() const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RotaryKnob)
 };

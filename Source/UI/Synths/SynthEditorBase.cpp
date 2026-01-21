@@ -41,14 +41,15 @@ void SynthEditorBase::layoutHeader(juce::Rectangle<int> area)
     area = area.reduced(ProgFlowSpacing::MD, ProgFlowSpacing::SM);
 
     // Left side: Preset controls (vertically centered)
-    presetLabel.setBounds(area.getX(), area.getCentreY() - 20, 55, 18);
+    presetLabel.setBounds(area.getX(), area.getCentreY() - 10, 55, 18);
     presetSelector.setBounds(area.getX() + 60, area.getCentreY() - 14, 200, ProgFlowSpacing::COMBO_HEIGHT);
 
-    // Right side: Master volume knob
+    // Right side: Master volume knob - centered vertically in header
     int masterKnobHeight = RotaryKnob::TOTAL_HEIGHT;
-    int masterX = area.getRight() - KNOB_SIZE - ProgFlowSpacing::MD;
-    masterLabel.setBounds(masterX - 15, area.getY(), KNOB_SIZE + 30, 16);
-    masterVolume.setBounds(masterX, area.getY() + 14, KNOB_SIZE, masterKnobHeight);
+    int masterX = area.getRight() - KNOB_SIZE - ProgFlowSpacing::SM;
+    int masterY = area.getCentreY() - masterKnobHeight / 2;
+    masterLabel.setBounds(masterX - 10, masterY - 2, KNOB_SIZE + 20, 14);
+    masterVolume.setBounds(masterX, masterY + 10, KNOB_SIZE, masterKnobHeight - 10);
 }
 
 juce::Rectangle<int> SynthEditorBase::getContentArea()

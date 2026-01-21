@@ -3,19 +3,18 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "../../Audio/Track.h"
 #include "../LookAndFeel.h"
-#include "../Common/RotaryKnob.h"
 #include "../Common/VerticalMeter.h"
 
 /**
- * TrackHeader - A single track row in the track list
+ * TrackHeader - A single track row in the track list (Saturn design)
  *
- * Shows:
- * - Track color indicator
- * - Track name (editable)
- * - Mute (M) and Solo (S) buttons
- * - Volume fader
- * - Pan knob
- * - VU meter
+ * Layout:
+ * ╭──────────────────────╮
+ * │ ● Track 1        [×] │  ← Color dot + name + delete
+ * │ FM Synth          ▼  │  ← Synth selector
+ * │ [S] [M] [R] [A]      │  ← State buttons
+ * │ ────────●────────    │  ← Volume slider + meter
+ * ╰──────────────────────╯
  */
 class TrackHeader : public juce::Component,
                     public juce::Timer
@@ -58,12 +57,16 @@ private:
     juce::TextButton autoButton{"A"};
     juce::TextButton deleteButton{"×"};
     bool automationExpanded = false;
-    RotaryKnob volumeKnob;
-    RotaryKnob panKnob;
-    VerticalMeter meter;
 
-    // Color indicator
-    juce::Rectangle<int> colorIndicatorBounds;
+    // Volume slider (horizontal for compact layout)
+    juce::Slider volumeSlider;
+    juce::Label volumeLabel;
+
+    // Pan slider
+    juce::Slider panSlider;
+
+    // Meter
+    VerticalMeter meter;
 
     void updateMuteButtonAppearance();
     void updateSoloButtonAppearance();

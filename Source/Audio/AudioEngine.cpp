@@ -4,8 +4,6 @@
 
 AudioEngine::AudioEngine()
 {
-    DBG("AudioEngine created");
-
     // Initialize effect chain with default effects
     effectChain.addEffect(std::make_unique<ChorusEffect>());
     effectChain.addEffect(std::make_unique<DelayEffect>());
@@ -29,7 +27,6 @@ AudioEngine::AudioEngine()
 
 AudioEngine::~AudioEngine()
 {
-    DBG("AudioEngine destroyed");
 }
 
 //==============================================================================
@@ -40,8 +37,6 @@ void AudioEngine::prepareToPlay(int samplesPerBlockExpected, double newSampleRat
 {
     sampleRate = newSampleRate;
     samplesPerBlock = samplesPerBlockExpected;
-
-    DBG("AudioEngine::prepareToPlay - Sample rate: " << sampleRate << ", Block size: " << samplesPerBlock);
 
     // Prepare synth
     analogSynth.prepareToPlay(sampleRate, samplesPerBlock);
@@ -212,8 +207,6 @@ void AudioEngine::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
 
 void AudioEngine::releaseResources()
 {
-    DBG("AudioEngine::releaseResources");
-
     masterChain.reset();
     analogSynth.releaseResources();
     effectChain.releaseResources();
@@ -231,16 +224,69 @@ void AudioEngine::releaseResources()
 
 void AudioEngine::synthNoteOn(int midiNote, float velocity)
 {
-    juce::ScopedLock sl(midiLock);
-    auto msg = juce::MidiMessage::noteOn(1, midiNote, velocity);
-    midiBuffer.addEvent(msg, 0);
+    {
+        juce::ScopedLock sl(midiLock);
+        auto msg = juce::MidiMessage::noteOn(1, midiNote, velocity);
+        midiBuffer.addEvent(msg, 0);
+    }
+
+    // If recording, store the note start time
+    if (playing.load())
+    {
+        int trackIdx = keyboardTrackIndex.load();
+        juce::ScopedLock sl(trackLock);
+        if (trackIdx >= 0 && trackIdx < static_cast<int>(tracks.size()))
+        {
+            if (tracks[trackIdx]->isArmed())
+            {
+                juce::ScopedLock rl(recordingLock);
+                pendingRecordingNotes[midiNote] = { positionInBeats.load(), velocity };
+            }
+        }
+    }
 }
 
 void AudioEngine::synthNoteOff(int midiNote)
 {
-    juce::ScopedLock sl(midiLock);
-    auto msg = juce::MidiMessage::noteOff(1, midiNote);
-    midiBuffer.addEvent(msg, 0);
+    {
+        juce::ScopedLock sl(midiLock);
+        auto msg = juce::MidiMessage::noteOff(1, midiNote);
+        midiBuffer.addEvent(msg, 0);
+    }
+
+    // If recording, record the note with calculated duration
+    if (playing.load())
+    {
+        int trackIdx = keyboardTrackIndex.load();
+        juce::ScopedLock sl(trackLock);
+        if (trackIdx >= 0 && trackIdx < static_cast<int>(tracks.size()))
+        {
+            Track* track = tracks[trackIdx].get();
+            if (track->isArmed())
+            {
+                juce::ScopedLock rl(recordingLock);
+                auto it = pendingRecordingNotes.find(midiNote);
+                if (it != pendingRecordingNotes.end())
+                {
+                    double startBeat = it->second.startBeatPosition;
+                    float vel = it->second.velocity;
+                    double endBeat = positionInBeats.load();
+                    double durationBeats = endBeat - startBeat;
+
+                    // Convert beats to bars (4 beats per bar default)
+                    double startBar = startBeat / 4.0;
+                    double durationBars = durationBeats / 4.0;
+
+                    // Ensure minimum note duration
+                    if (durationBars < 0.0625)  // 1/16th of a bar minimum
+                        durationBars = 0.0625;
+
+                    track->recordNoteAtPosition(startBar, midiNote, durationBars, vel);
+                    pendingRecordingNotes.erase(it);
+                }
+            }
+        }
+    }
 }
 
 void AudioEngine::synthAllNotesOff()
@@ -257,7 +303,6 @@ void AudioEngine::synthAllNotesOff()
 void AudioEngine::play()
 {
     playing.store(true);
-    DBG("AudioEngine: Play");
 }
 
 void AudioEngine::stop()
@@ -280,8 +325,6 @@ void AudioEngine::stop()
 
     // Clear pending note-offs
     trackPendingNoteOffs.clear();
-
-    DBG("AudioEngine: Stop");
 }
 
 void AudioEngine::setPlaying(bool shouldPlay)
@@ -297,7 +340,6 @@ void AudioEngine::setBpm(double bpm)
     double clampedBpm = juce::jlimit(20.0, 300.0, bpm);
     currentBpm.store(clampedBpm);
     tempoTrack.setInitialTempo(clampedBpm);
-    DBG("AudioEngine: BPM set to " << currentBpm.load());
 }
 
 double AudioEngine::getCurrentTempo() const
@@ -326,8 +368,6 @@ void AudioEngine::addTrack(std::unique_ptr<Track> track)
 
     track->prepareToPlay(sampleRate, samplesPerBlock);
     tracks.push_back(std::move(track));
-
-    DBG("AudioEngine: Added track. Total tracks: " << tracks.size());
 }
 
 void AudioEngine::removeTrack(int index)
@@ -337,7 +377,6 @@ void AudioEngine::removeTrack(int index)
     if (index >= 0 && index < static_cast<int>(tracks.size()))
     {
         tracks.erase(tracks.begin() + index);
-        DBG("AudioEngine: Removed track at index " << index);
     }
 }
 
@@ -471,13 +510,25 @@ void AudioEngine::scheduleClipMidiToTracks(double blockStartBeat, double blockEn
 {
     juce::ScopedLock sl(trackLock);
 
+    // Calculate beats-to-samples conversion for this block
+    const double beatsInBlock = blockEndBeat - blockStartBeat;
+    const double samplesPerBeat = (beatsInBlock > 0.0) ? numSamples / beatsInBlock : 0.0;
+
+    // Helper to convert beat position to sample offset within this block
+    auto beatToSampleOffset = [&](double beat) -> int {
+        double beatsFromBlockStart = beat - blockStartBeat;
+        int sampleOffset = static_cast<int>(beatsFromBlockStart * samplesPerBeat);
+        return juce::jlimit(0, numSamples - 1, sampleOffset);
+    };
+
     // Process pending note-offs first
     auto it = trackPendingNoteOffs.begin();
     while (it != trackPendingNoteOffs.end())
     {
         if (it->endBeat <= blockEndBeat && it->track)
         {
-            it->track->synthNoteOff(it->midiNote);
+            int sampleOffset = beatToSampleOffset(it->endBeat);
+            it->track->synthNoteOff(it->midiNote, sampleOffset);
             it = trackPendingNoteOffs.erase(it);
         }
         else
@@ -515,14 +566,24 @@ void AudioEngine::scheduleClipMidiToTracks(double blockStartBeat, double blockEn
                 double noteAbsoluteStartBeat = clipStartBeat + note->startBeat;
                 double noteAbsoluteEndBeat = noteAbsoluteStartBeat + note->durationBeats;
 
-                // Send note-on to this track's synth
-                track->synthNoteOn(note->midiNote, note->velocity);
+                // Calculate sample offset for note-on
+                int noteOnOffset = beatToSampleOffset(noteAbsoluteStartBeat);
+
+                // Send note-on to this track's synth with correct timing
+                track->synthNoteOn(note->midiNote, note->velocity, noteOnOffset);
 
                 // Check if note-off is within this block
                 if (noteAbsoluteEndBeat <= blockEndBeat)
                 {
+                    // Calculate sample offset for note-off
+                    int noteOffOffset = beatToSampleOffset(noteAbsoluteEndBeat);
+
+                    // Ensure note-off comes after note-on (minimum 1 sample duration)
+                    if (noteOffOffset <= noteOnOffset)
+                        noteOffOffset = juce::jmin(noteOnOffset + 1, numSamples - 1);
+
                     // Note ends within this block
-                    track->synthNoteOff(note->midiNote);
+                    track->synthNoteOff(note->midiNote, noteOffOffset);
                 }
                 else
                 {
@@ -542,7 +603,6 @@ void AudioEngine::setMetronomeEnabled(bool enabled)
 {
     metronomeEnabled.store(enabled);
     lastMetronomeBeat = -1.0;  // Reset to ensure first click happens
-    DBG("Metronome " << (enabled ? "enabled" : "disabled"));
 }
 
 void AudioEngine::setMetronomeVolume(float volume)
@@ -569,7 +629,6 @@ void AudioEngine::playWithCountIn()
 
         // Start playback - metronome will play during count-in
         playing.store(true);
-        DBG("AudioEngine: Play with " << bars << " bar count-in (" << countInBeatsRemaining.load() << " beats)");
     }
     else
     {

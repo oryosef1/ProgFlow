@@ -20,7 +20,7 @@ public:
 
 protected:
     // Use modern design sizes from ProgFlowSpacing
-    static constexpr int HEADER_HEIGHT = 80;  // Fits larger knob (52) + label (18) + padding
+    static constexpr int HEADER_HEIGHT = 90;  // Fits knob (48) + label (14) + value (14) + padding
     static constexpr int SECTION_PADDING = 8;
     static constexpr int KNOB_SIZE = ProgFlowSpacing::KNOB_SIZE;  // 52px
 

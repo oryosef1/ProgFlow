@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "Core/UndoManager.h"
 #include <vector>
+#include <cmath>
 
 //==============================================================================
 // MainContentComponent
@@ -18,7 +19,8 @@ MainContentComponent::MainContentComponent()
     auto result = deviceManager.initialiseWithDefaultDevices(0, 2); // 0 inputs, 2 outputs (stereo)
     if (result.isNotEmpty())
     {
-        DBG("Audio device initialization failed: " + result);
+        // Audio device initialization failed
+        juce::ignoreUnused(result);
     }
 
     // Set up audio playback
@@ -32,6 +34,16 @@ MainContentComponent::MainContentComponent()
     // Create transport bar
     transportBar = std::make_unique<TransportBar>(audioEngine);
     transportBar->setAudioDeviceManager(&deviceManager);
+    transportBar->onBackToProjectSelection = [this] { showWelcomeScreen(); };
+    transportBar->onProjectRename = [this](const juce::String& newName) {
+        if (projectManager)
+        {
+            projectManager->setProjectName(newName);
+            transportBar->setProjectName(newName);
+            if (parentWindow)
+                parentWindow->updateTitle();
+        }
+    };
     addAndMakeVisible(*transportBar);
 
     // Create timeline panel
@@ -60,6 +72,9 @@ MainContentComponent::MainContentComponent()
             timelinePanel->updateTracks();
         if (mixerPanel)
             mixerPanel->refreshTracks();
+    };
+    trackHeaderPanel->onBackToProjectSelection = [this]() {
+        showWelcomeScreen();
     };
     addAndMakeVisible(*trackHeaderPanel);
 
@@ -113,6 +128,18 @@ MainContentComponent::MainContentComponent()
     toastManager = std::make_unique<ToastManager>();
     addAndMakeVisible(*toastManager);
 
+    // Setup resize handle for bottom panel
+    resizeHandle.onResize = [this](int deltaY) {
+        int newHeight = bottomPanelHeight + deltaY;
+        newHeight = juce::jlimit(MIN_BOTTOM_PANEL_HEIGHT, MAX_BOTTOM_PANEL_HEIGHT, newHeight);
+        if (newHeight != bottomPanelHeight)
+        {
+            bottomPanelHeight = newHeight;
+            resized();
+        }
+    };
+    addAndMakeVisible(resizeHandle);
+
     // Initially hide all other UI until welcome screen is dismissed
     transportBar->setVisible(false);
     trackHeaderPanel->setVisible(false);
@@ -120,12 +147,17 @@ MainContentComponent::MainContentComponent()
     pianoRollEditor->setVisible(false);
     if (synthEditor) synthEditor->setVisible(false);
 
+    // Initialize background animation
+    initBackgroundAnimation();
+    startTimerHz(30);  // 30fps for smooth animations
+
     // Set minimum size
     setSize(1400, 900);
 }
 
 MainContentComponent::~MainContentComponent()
 {
+    stopTimer();
     ThemeManager::getInstance().removeListener(this);
     if (projectManager)
         projectManager->removeListener(this);
@@ -141,6 +173,10 @@ void MainContentComponent::mouseDown(const juce::MouseEvent&)
     grabKeyboardFocus();
 }
 
+void MainContentComponent::mouseDrag(const juce::MouseEvent&) {}
+void MainContentComponent::mouseUp(const juce::MouseEvent&) {}
+void MainContentComponent::mouseMove(const juce::MouseEvent&) {}
+
 void MainContentComponent::paint(juce::Graphics& g)
 {
     g.fillAll(ProgFlowColours::bgPrimary());
@@ -148,6 +184,9 @@ void MainContentComponent::paint(juce::Graphics& g)
     // Don't draw borders when showing welcome screen
     if (showingWelcomeScreen)
         return;
+
+    // Draw subtle background animation
+    drawBackgroundAnimation(g);
 
     // Draw borders between panels
     g.setColour(ProgFlowColours::border());
@@ -157,11 +196,11 @@ void MainContentComponent::paint(juce::Graphics& g)
 
     if (mainViewMode == MainViewMode::Arrange)
     {
-        // Border between track list and timeline
-        g.drawLine(200, 50, 200, static_cast<float>(getHeight()) - 280);
+        int keyboardOffset = showingVirtualKeyboard ? 110 : 0;
+        int bottomY = getHeight() - bottomPanelHeight - keyboardOffset - RESIZE_HANDLE_HEIGHT;
 
-        // Border above bottom panel
-        g.drawLine(0, static_cast<float>(getHeight()) - 280, static_cast<float>(getWidth()), static_cast<float>(getHeight()) - 280);
+        // Border between track list and timeline
+        g.drawLine(200, 50, 200, static_cast<float>(bottomY));
     }
     // Mixer view has no internal borders (handled by MixerPanel)
 }
@@ -211,8 +250,12 @@ void MainContentComponent::resized()
             pluginBrowser->setVisible(false);
         }
 
-        // Bottom panel (280px height) - either synth editor or piano roll
-        auto bottomBounds = bounds.removeFromBottom(280);
+        // Bottom panel (resizable height) - either synth editor or piano roll
+        auto bottomBounds = bounds.removeFromBottom(bottomPanelHeight);
+
+        // Resize handle between timeline and bottom panel
+        resizeHandle.setBounds(bounds.removeFromBottom(RESIZE_HANDLE_HEIGHT));
+        resizeHandle.setVisible(true);
 
         if (bottomPanelMode == BottomPanelMode::SynthEditor)
         {
@@ -242,10 +285,128 @@ void MainContentComponent::resized()
         timelinePanel->setVisible(false);
         synthEditor->setVisible(false);
         pianoRollEditor->setVisible(false);
+        resizeHandle.setVisible(false);
 
         // Mixer fills everything below transport
         mixerPanel->setBounds(bounds);
         mixerPanel->setVisible(true);
+    }
+}
+
+//==============================================================================
+// Background Animation
+//==============================================================================
+
+void MainContentComponent::initBackgroundAnimation()
+{
+    bgParticles.clear();
+    std::uniform_real_distribution<float> xDist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> yDist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> vDist(-0.001f, 0.001f);
+    std::uniform_real_distribution<float> sizeDist(2.0f, 5.0f);
+    std::uniform_real_distribution<float> alphaDist(0.15f, 0.35f);
+
+    // Visible particles with glow
+    for (int i = 0; i < 40; ++i)
+    {
+        Particle p;
+        p.x = xDist(rng);
+        p.y = yDist(rng);
+        p.vx = vDist(rng);
+        p.vy = vDist(rng) - 0.0004f; // Slight upward drift
+        p.size = sizeDist(rng);
+        p.alpha = alphaDist(rng);
+        bgParticles.push_back(p);
+    }
+}
+
+void MainContentComponent::updateBackgroundAnimation()
+{
+    animationTime += 0.033f; // ~30fps
+
+    for (auto& p : bgParticles)
+    {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap around
+        if (p.x < 0.0f) p.x += 1.0f;
+        if (p.x > 1.0f) p.x -= 1.0f;
+        if (p.y < 0.0f) p.y += 1.0f;
+        if (p.y > 1.0f) p.y -= 1.0f;
+
+        // Visible alpha pulsing
+        p.alpha = 0.15f + 0.12f * std::sin(animationTime * 2.0f + p.x * 10.0f);
+    }
+}
+
+void MainContentComponent::drawBackgroundAnimation(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    for (const auto& p : bgParticles)
+    {
+        float x = p.x * bounds.getWidth();
+        float y = p.y * bounds.getHeight();
+
+        // Draw particle with subtle glow
+        juce::ColourGradient glow(
+            ProgFlowColours::accentBlue().withAlpha(p.alpha),
+            x, y,
+            ProgFlowColours::accentBlue().withAlpha(0.0f),
+            x + p.size * 3.0f, y,
+            true);
+
+        g.setGradientFill(glow);
+        g.fillEllipse(x - p.size, y - p.size, p.size * 2.0f, p.size * 2.0f);
+    }
+
+    // Animated waveform visualization at the bottom
+    if (mainViewMode == MainViewMode::Arrange)
+    {
+        float waveY = bounds.getBottom() - 30.0f;
+        juce::Path wavePath;
+
+        int numPoints = 80;
+        for (int i = 0; i <= numPoints; ++i)
+        {
+            float nx = static_cast<float>(i) / numPoints;
+            float x = nx * bounds.getWidth();
+
+            // Combine sine waves for organic look
+            float y = waveY;
+            y += std::sin(nx * 8.0f + animationTime * 1.5f) * 12.0f;
+            y += std::sin(nx * 12.0f - animationTime * 2.0f) * 6.0f;
+            y += std::sin(nx * 20.0f + animationTime * 0.8f) * 3.0f;
+
+            // Fade at edges
+            float edgeFade = std::min(nx, 1.0f - nx) * 4.0f;
+            edgeFade = juce::jmin(1.0f, edgeFade);
+            y = waveY + (y - waveY) * edgeFade;
+
+            if (i == 0)
+                wavePath.startNewSubPath(x, y);
+            else
+                wavePath.lineTo(x, y);
+        }
+
+        // Waveform with glow effect
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.08f));
+        g.strokePath(wavePath, juce::PathStrokeType(8.0f));
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.2f));
+        g.strokePath(wavePath, juce::PathStrokeType(3.0f));
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.4f));
+        g.strokePath(wavePath, juce::PathStrokeType(1.5f));
+    }
+}
+
+void MainContentComponent::timerCallback()
+{
+    // Only animate when not showing welcome screen (it has its own animation)
+    if (!showingWelcomeScreen)
+    {
+        updateBackgroundAnimation();
+        repaint();
     }
 }
 
@@ -475,7 +636,6 @@ bool MainContentComponent::keyPressed(const juce::KeyPress& key, juce::Component
         {
             keysDown.insert(keyCode);
             audioEngine.synthNoteOn(midiNote, 0.8f);
-            DBG("Note On: " << midiNote);
         }
         return true;
     }
@@ -496,7 +656,6 @@ bool MainContentComponent::keyStateChanged(bool isKeyDown, juce::Component*)
             if (midiNote >= 0)
             {
                 audioEngine.synthNoteOff(midiNote);
-                DBG("Note Off: " << midiNote);
             }
             keysToRemove.push_back(keyCode);
         }
@@ -571,6 +730,35 @@ void MainContentComponent::hideWelcomeScreen()
     if (synthEditor)
         synthEditor->setVisible(bottomPanelMode == BottomPanelMode::SynthEditor);
     pianoRollEditor->setVisible(bottomPanelMode == BottomPanelMode::PianoRoll);
+
+    // Refresh layout
+    resized();
+    repaint();
+}
+
+void MainContentComponent::showWelcomeScreen()
+{
+    if (showingWelcomeScreen)
+        return;
+
+    showingWelcomeScreen = true;
+
+    // Show welcome screen
+    if (welcomeScreen)
+    {
+        welcomeScreen->setRecentProjects(projectManager->getRecentProjects());
+        welcomeScreen->setVisible(true);
+    }
+
+    // Hide main UI
+    transportBar->setVisible(false);
+    trackHeaderPanel->setVisible(false);
+    timelinePanel->setVisible(false);
+    if (synthEditor)
+        synthEditor->setVisible(false);
+    pianoRollEditor->setVisible(false);
+    mixerPanel->setVisible(false);
+    resizeHandle.setVisible(false);
 
     // Refresh layout
     resized();
@@ -742,27 +930,6 @@ void MainContentComponent::updateSynthEditorForTrack(Track* track)
             }
             break;
 
-        case SynthType::PolyPad:
-            if (auto* padSynth = dynamic_cast<PolyPadSynth*>(track->getSynth()))
-            {
-                synthEditor = std::make_unique<PolyPadSynthEditor>(*padSynth);
-            }
-            break;
-
-        case SynthType::Organ:
-            if (auto* organSynth = dynamic_cast<OrganSynth*>(track->getSynth()))
-            {
-                synthEditor = std::make_unique<OrganSynthEditor>(*organSynth);
-            }
-            break;
-
-        case SynthType::String:
-            if (auto* stringSynth = dynamic_cast<StringSynth*>(track->getSynth()))
-            {
-                synthEditor = std::make_unique<StringSynthEditor>(*stringSynth);
-            }
-            break;
-
         case SynthType::Pro:
             if (auto* proSynth = dynamic_cast<ProSynth*>(track->getSynth()))
             {
@@ -888,7 +1055,7 @@ void MainContentComponent::loadPluginOnSelectedTrack(const juce::PluginDescripti
     }
     else
     {
-        DBG("Failed to load plugin: " + errorMessage);
+        juce::ignoreUnused(errorMessage);
     }
 }
 
@@ -909,7 +1076,6 @@ void MainContentComponent::toggleVirtualKeyboard()
     showingVirtualKeyboard = !showingVirtualKeyboard;
     resized();
     repaint();
-    DBG("Virtual keyboard " << (showingVirtualKeyboard ? "shown" : "hidden"));
 }
 
 //==============================================================================

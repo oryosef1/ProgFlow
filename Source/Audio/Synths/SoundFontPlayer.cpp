@@ -94,7 +94,11 @@ void SoundFontPlayer::prepareToPlay(double newSampleRate, int newSamplesPerBlock
     // Configure TSF output
     if (soundFont != nullptr)
     {
-        tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(newSampleRate), 0.0f);
+        // Use -10dB gain reduction to prevent clipping (SoundFont samples can be hot)
+        tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(newSampleRate), -10.0f);
+
+        // Limit max voices to prevent CPU spikes and voice stealing artifacts
+        tsf_set_max_voices(soundFont, 64);
     }
 }
 
@@ -128,15 +132,26 @@ void SoundFontPlayer::processBlock(juce::AudioBuffer<float>& buffer,
     // Apply volume
     float volume = getParameter("volume");
 
-    // De-interleave to output buffer
+    // De-interleave to output buffer with soft clipping
     float* leftChannel = buffer.getWritePointer(0);
     float* rightChannel = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
 
+    // Soft clip function to prevent harsh digital clipping
+    auto softClip = [](float x) -> float
+    {
+        if (x > 1.0f) return 1.0f - 1.0f / (x + 1.0f);
+        if (x < -1.0f) return -1.0f + 1.0f / (-x + 1.0f);
+        return x;
+    };
+
     for (int i = 0; i < numSamples; ++i)
     {
-        leftChannel[i] = renderBuffer[i * 2] * volume;
+        float left = renderBuffer[i * 2] * volume;
+        float right = renderBuffer[i * 2 + 1] * volume;
+
+        leftChannel[i] = softClip(left);
         if (rightChannel != nullptr)
-            rightChannel[i] = renderBuffer[i * 2 + 1] * volume;
+            rightChannel[i] = softClip(right);
     }
 
     // Apply pan
@@ -223,7 +238,8 @@ bool SoundFontPlayer::loadSoundFont(const juce::String& path)
         // Configure output if already prepared
         if (sampleRate > 0)
         {
-            tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(sampleRate), 0.0f);
+            tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(sampleRate), -10.0f);
+            tsf_set_max_voices(soundFont, 64);
         }
 
         return true;
@@ -251,7 +267,8 @@ bool SoundFontPlayer::loadSoundFontFromMemory(const void* data, size_t size)
         // Configure output if already prepared
         if (sampleRate > 0)
         {
-            tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(sampleRate), 0.0f);
+            tsf_set_output(soundFont, TSF_STEREO_INTERLEAVED, static_cast<int>(sampleRate), -10.0f);
+            tsf_set_max_voices(soundFont, 64);
         }
 
         return true;

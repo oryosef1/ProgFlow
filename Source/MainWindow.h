@@ -3,6 +3,8 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_dsp/juce_dsp.h>
 #include <set>
+#include <random>
+#include <vector>
 #include "Audio/AudioEngine.h"
 #include "Audio/PluginHost.h"
 #include "Project/ProjectManager.h"
@@ -10,9 +12,6 @@
 #include "UI/TransportBar.h"
 #include "UI/Synths/AnalogSynthEditor.h"
 #include "UI/Synths/FMSynthEditor.h"
-#include "UI/Synths/PolyPadSynthEditor.h"
-#include "UI/Synths/OrganSynthEditor.h"
-#include "UI/Synths/StringSynthEditor.h"
 #include "UI/Synths/ProSynthEditor.h"
 #include "UI/Synths/SamplerEditor.h"
 #include "UI/Synths/SoundFontPlayerEditor.h"
@@ -37,7 +36,8 @@ class MainContentComponent : public juce::Component,
                               public juce::KeyListener,
                               public juce::MenuBarModel,
                               public ProjectManager::Listener,
-                              public ThemeManager::Listener
+                              public ThemeManager::Listener,
+                              public juce::Timer
 {
 public:
     MainContentComponent();
@@ -46,6 +46,9 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
     void mouseDown(const juce::MouseEvent& event) override;
+    void mouseDrag(const juce::MouseEvent& event) override;
+    void mouseUp(const juce::MouseEvent& event) override;
+    void mouseMove(const juce::MouseEvent& event) override;
 
     // KeyListener
     bool keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent) override;
@@ -64,6 +67,9 @@ public:
     // ThemeManager::Listener
     void themeChanged() override;
 
+    // Timer for background animations
+    void timerCallback() override;
+
     // Set parent window reference for title updates
     void setParentWindow(MainWindow* window) { parentWindow = window; }
 
@@ -78,6 +84,21 @@ public:
     void exportAudio();
 
 private:
+    // Background animation system
+    struct Particle {
+        float x, y;       // Position (0-1 normalized)
+        float vx, vy;     // Velocity
+        float size;       // Radius
+        float alpha;      // Opacity
+    };
+    std::vector<Particle> bgParticles;
+    float animationTime = 0.0f;
+    std::mt19937 rng{std::random_device{}()};
+
+    void initBackgroundAnimation();
+    void updateBackgroundAnimation();
+    void drawBackgroundAnimation(juce::Graphics& g);
+
     // Keyboard to MIDI mapping (QWERTY piano)
     int keyToMidiNote(int keyCode) const;
     std::set<int> keysDown; // Track which keys are held
@@ -91,7 +112,7 @@ private:
     std::unique_ptr<TimelinePanel> timelinePanel;
     std::unique_ptr<PianoRollEditor> pianoRollEditor;
     std::unique_ptr<juce::Component> synthEditor;  // Generic synth editor (type depends on selected track)
-    juce::TooltipWindow tooltipWindow{this, 500};  // 500ms delay before showing
+    juce::TooltipWindow tooltipWindow{this, 150};  // 150ms delay - faster tooltips
 
     // Track list panel
     std::unique_ptr<TrackHeaderPanel> trackHeaderPanel;
@@ -128,6 +149,80 @@ private:
     enum class BottomPanelMode { SynthEditor, PianoRoll };
     BottomPanelMode bottomPanelMode = BottomPanelMode::SynthEditor;
 
+    // Resizable bottom panel
+    int bottomPanelHeight = 350;  // Taller default to fit synth editors
+    static constexpr int MIN_BOTTOM_PANEL_HEIGHT = 350;  // Min needed for ProSynth layout
+    static constexpr int MAX_BOTTOM_PANEL_HEIGHT = 600;
+    static constexpr int RESIZE_HANDLE_HEIGHT = 8;
+
+    // Resize handle component
+    class ResizeHandle : public juce::Component
+    {
+    public:
+        std::function<void(int)> onResize;  // Called during drag with delta from last position
+
+        ResizeHandle() { setMouseCursor(juce::MouseCursor::UpDownResizeCursor); }
+
+        void paint(juce::Graphics& g) override
+        {
+            // Background
+            g.setColour(juce::Colour(0xff1a1f26));
+            g.fillRect(getLocalBounds());
+
+            // Draw 3 dots as handle indicator
+            g.setColour(isDragging ? juce::Colour(0xff4C9EFF) : juce::Colour(0x60888888));
+            int centreX = getWidth() / 2;
+            int centreY = getHeight() / 2;
+            for (int i = -1; i <= 1; ++i)
+                g.fillEllipse(float(centreX + i * 12 - 2), float(centreY - 2), 4.0f, 4.0f);
+        }
+
+        void mouseDown(const juce::MouseEvent& e) override
+        {
+            isDragging = true;
+            lastDragY = e.getScreenY();
+            accumulatedDelta = 0;
+            repaint();
+        }
+
+        void mouseDrag(const juce::MouseEvent& e) override
+        {
+            // Live resize during drag with threshold to reduce jitter
+            if (isDragging && onResize)
+            {
+                int delta = lastDragY - e.getScreenY();
+                accumulatedDelta += delta;
+                lastDragY = e.getScreenY();
+
+                // Only update when accumulated delta is significant (reduces flicker)
+                if (std::abs(accumulatedDelta) >= 4)
+                {
+                    onResize(accumulatedDelta);
+                    accumulatedDelta = 0;
+                }
+            }
+        }
+
+        void mouseUp(const juce::MouseEvent&) override
+        {
+            // Apply any remaining delta
+            if (isDragging && onResize && accumulatedDelta != 0)
+            {
+                onResize(accumulatedDelta);
+            }
+            isDragging = false;
+            accumulatedDelta = 0;
+            repaint();
+        }
+
+    private:
+        bool isDragging = false;
+        int lastDragY = 0;
+        int accumulatedDelta = 0;
+    };
+
+    ResizeHandle resizeHandle;
+
     // Custom look and feel
     ProgFlowLookAndFeel lookAndFeel;
 
@@ -152,6 +247,7 @@ private:
 
     // Helpers
     void hideWelcomeScreen();
+    void showWelcomeScreen();
     void addNewTrack();
     void openPianoRoll(MidiClip* clip);
     void showSynthEditor();

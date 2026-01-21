@@ -27,7 +27,6 @@ TrackHeader::TrackHeader(Track& track)
         if (selectedIndex >= 0)
         {
             this->track.setSynthType(SynthFactory::getSynthType(selectedIndex));
-            // Notify listener to update synth editor
             if (onSynthTypeChanged)
                 onSynthTypeChanged(this->track);
         }
@@ -35,8 +34,9 @@ TrackHeader::TrackHeader(Track& track)
     addAndMakeVisible(synthSelector);
 
     // Mute button
-    muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    muteButton.setTooltip("Mute track");
     muteButton.onClick = [this]() {
         this->track.setMuted(!this->track.isMuted());
         updateMuteButtonAppearance();
@@ -44,8 +44,9 @@ TrackHeader::TrackHeader(Track& track)
     addAndMakeVisible(muteButton);
 
     // Solo button
-    soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    soloButton.setTooltip("Solo track");
     soloButton.onClick = [this]() {
         this->track.setSoloed(!this->track.isSoloed());
         updateSoloButtonAppearance();
@@ -53,7 +54,7 @@ TrackHeader::TrackHeader(Track& track)
     addAndMakeVisible(soloButton);
 
     // Arm button (Record enable)
-    armButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    armButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     armButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     armButton.setTooltip("Arm track for recording");
     armButton.onClick = [this]() {
@@ -84,25 +85,39 @@ TrackHeader::TrackHeader(Track& track)
     };
     addAndMakeVisible(deleteButton);
 
-    // Volume knob
-    volumeKnob.setLabel("Vol");
-    volumeKnob.setRange(0.0f, 2.0f, 0.01f);
-    volumeKnob.setDefaultValue(1.0f);
-    volumeKnob.setValue(track.getVolume(), juce::dontSendNotification);
-    volumeKnob.onValueChange = [this](float value) {
-        this->track.setVolume(value);
+    // Volume slider (horizontal)
+    volumeSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    volumeSlider.setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
+    volumeSlider.setRange(0.0, 2.0, 0.01);
+    volumeSlider.setValue(track.getVolume(), juce::dontSendNotification);
+    volumeSlider.setColour(juce::Slider::trackColourId, ProgFlowColours::accentBlue());
+    volumeSlider.setColour(juce::Slider::backgroundColourId, ProgFlowColours::bgTertiary());
+    volumeSlider.setColour(juce::Slider::thumbColourId, ProgFlowColours::textPrimary());
+    volumeSlider.onValueChange = [this]() {
+        this->track.setVolume(static_cast<float>(volumeSlider.getValue()));
     };
-    addAndMakeVisible(volumeKnob);
+    volumeSlider.setTooltip("Track volume");
+    addAndMakeVisible(volumeSlider);
 
-    // Pan knob
-    panKnob.setLabel("Pan");
-    panKnob.setRange(-1.0f, 1.0f, 0.01f);
-    panKnob.setDefaultValue(0.0f);
-    panKnob.setValue(track.getPan(), juce::dontSendNotification);
-    panKnob.onValueChange = [this](float value) {
-        this->track.setPan(value);
+    // Volume label
+    volumeLabel.setText("Vol", juce::dontSendNotification);
+    volumeLabel.setFont(juce::Font(9.0f));
+    volumeLabel.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
+    addAndMakeVisible(volumeLabel);
+
+    // Pan slider (horizontal, small)
+    panSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    panSlider.setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
+    panSlider.setRange(-1.0, 1.0, 0.01);
+    panSlider.setValue(track.getPan(), juce::dontSendNotification);
+    panSlider.setColour(juce::Slider::trackColourId, ProgFlowColours::accentBlue());
+    panSlider.setColour(juce::Slider::backgroundColourId, ProgFlowColours::bgTertiary());
+    panSlider.setColour(juce::Slider::thumbColourId, ProgFlowColours::textPrimary());
+    panSlider.onValueChange = [this]() {
+        this->track.setPan(static_cast<float>(panSlider.getValue()));
     };
-    addAndMakeVisible(panKnob);
+    panSlider.setTooltip("Pan (left/right)");
+    addAndMakeVisible(panSlider);
 
     // Meter
     addAndMakeVisible(meter);
@@ -129,42 +144,53 @@ void TrackHeader::timerCallback()
 
 void TrackHeader::mouseDown(const juce::MouseEvent& /*event*/)
 {
-    // Select this track when clicked anywhere on the header
     if (onTrackSelected)
         onTrackSelected(track);
 }
 
 void TrackHeader::paint(juce::Graphics& g)
 {
-    auto bounds = getLocalBounds().toFloat();
+    auto bounds = getLocalBounds().reduced(2);
 
-    // Background
-    g.setColour(selected ? ProgFlowColours::bgTertiary() : ProgFlowColours::bgSecondary());
-    g.fillRect(bounds);
+    // Card background with gradient (Saturn design)
+    juce::ColourGradient gradient(
+        ProgFlowColours::surfaceBg(),
+        0.0f, 0.0f,
+        ProgFlowColours::bgSecondary(),
+        0.0f, static_cast<float>(bounds.getHeight()),
+        false);
+    g.setGradientFill(gradient);
+    g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
 
-    // Track color indicator (left edge)
-    g.setColour(track.getColour());
-    g.fillRect(0.0f, 0.0f, 4.0f, bounds.getHeight());
-
-    // Bottom border
-    g.setColour(ProgFlowColours::border());
-    g.drawLine(0.0f, bounds.getBottom() - 0.5f, bounds.getRight(), bounds.getBottom() - 0.5f);
+    // Subtle border
+    g.setColour(juce::Colour(0x0dffffff));  // 5% white
+    g.drawRoundedRectangle(bounds.toFloat(), 6.0f, 1.0f);
 
     // Selection highlight
     if (selected)
     {
-        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.2f));
-        g.fillRect(bounds);
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.15f));
+        g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
+
+        // Accent border when selected
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.5f));
+        g.drawRoundedRectangle(bounds.toFloat(), 6.0f, 1.5f);
     }
+
+    // Track color indicator dot (top left inside card)
+    g.setColour(track.getColour());
+    g.fillEllipse(static_cast<float>(bounds.getX() + 8),
+                  static_cast<float>(bounds.getY() + 10),
+                  8.0f, 8.0f);
 }
 
 void TrackHeader::resized()
 {
-    auto bounds = getLocalBounds();
+    auto bounds = getLocalBounds().reduced(2);  // Card margin
+    bounds.reduce(8, 6);  // Internal padding
 
-    // Skip color indicator area
-    bounds.removeFromLeft(8);
-    bounds.reduce(6, 6);
+    // Skip color dot area
+    bounds.removeFromLeft(14);
 
     // Row 1: Track name + Delete button (18px)
     auto row1 = bounds.removeFromTop(18);
@@ -176,16 +202,16 @@ void TrackHeader::resized()
     // Row 2: Synth selector (22px)
     auto row2 = bounds.removeFromTop(22);
     synthSelector.setBounds(row2);
-    bounds.removeFromTop(6);
+    bounds.removeFromTop(4);
 
-    // Row 3: Buttons (M, S, R, A) in a row (20px height)
+    // Row 3: Buttons (S, M, R, A) in a row (20px height)
     auto row3 = bounds.removeFromTop(20);
-    int btnSize = 18;
-    int btnGap = 2;
+    int btnSize = 20;
+    int btnGap = 3;
 
-    muteButton.setBounds(row3.removeFromLeft(btnSize));
-    row3.removeFromLeft(btnGap);
     soloButton.setBounds(row3.removeFromLeft(btnSize));
+    row3.removeFromLeft(btnGap);
+    muteButton.setBounds(row3.removeFromLeft(btnSize));
     row3.removeFromLeft(btnGap);
     armButton.setBounds(row3.removeFromLeft(btnSize));
     row3.removeFromLeft(btnGap);
@@ -193,16 +219,20 @@ void TrackHeader::resized()
 
     bounds.removeFromTop(4);
 
-    // Row 4: Volume, Pan knobs and Meter (remaining space ~24px)
+    // Row 4: Volume slider + meter
     auto row4 = bounds;
-    int knobSize = 28;  // Smaller knobs for track header
 
-    volumeKnob.setBounds(row4.removeFromLeft(knobSize + 6).withSizeKeepingCentre(knobSize, row4.getHeight()));
-    panKnob.setBounds(row4.removeFromLeft(knobSize + 6).withSizeKeepingCentre(knobSize, row4.getHeight()));
+    // Meter on right
+    meter.setBounds(row4.removeFromRight(12));
+    row4.removeFromRight(6);
 
-    // Meter takes remaining space
-    row4.removeFromLeft(4);
-    meter.setBounds(row4);
+    // Pan slider (small, right side before meter)
+    panSlider.setBounds(row4.removeFromRight(40).withHeight(14).withY(row4.getY() + 2));
+    row4.removeFromRight(4);
+
+    // Volume label + slider
+    volumeLabel.setBounds(row4.removeFromLeft(20).withHeight(14));
+    volumeSlider.setBounds(row4.withHeight(16).withY(row4.getY()));
 }
 
 void TrackHeader::setSelected(bool isSelected)
@@ -218,12 +248,13 @@ void TrackHeader::updateMuteButtonAppearance()
 {
     if (track.isMuted())
     {
-        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentRed());
-        muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textPrimary());
+        // Saturn design: Mute = gold (warning)
+        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentOrange());
+        muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::bgPrimary());
     }
     else
     {
-        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
         muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     }
     muteButton.repaint();
@@ -233,12 +264,13 @@ void TrackHeader::updateSoloButtonAppearance()
 {
     if (track.isSoloed())
     {
-        soloButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xfffbbf24));  // Yellow
+        // Saturn design: Solo = cyan (positive)
+        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentGreen());
         soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::bgPrimary());
     }
     else
     {
-        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
         soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     }
     soloButton.repaint();
@@ -248,12 +280,13 @@ void TrackHeader::updateArmButtonAppearance()
 {
     if (track.isArmed())
     {
+        // Saturn design: Record/Arm = coral (negative)
         armButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentRed());
-        armButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textPrimary());
+        armButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::bgPrimary());
     }
     else
     {
-        armButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        armButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
         armButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     }
     armButton.repaint();

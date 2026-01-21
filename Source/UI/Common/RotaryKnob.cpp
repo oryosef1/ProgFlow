@@ -41,7 +41,10 @@ void RotaryKnob::resized()
 {
     auto bounds = getLocalBounds();
 
-    // Label at bottom
+    // Value at very bottom
+    valueArea = bounds.removeFromBottom(VALUE_HEIGHT);
+
+    // Label above value
     labelArea = bounds.removeFromBottom(LABEL_HEIGHT);
 
     // Gap
@@ -53,27 +56,19 @@ void RotaryKnob::resized()
 
 void RotaryKnob::paint(juce::Graphics& g)
 {
-    // Use the fixed knob diameter
+    // Saturn design: 48px knob with metallic gradient, subtle styling
     auto centreX = static_cast<float>(knobArea.getCentreX());
     auto centreY = static_cast<float>(knobArea.getCentreY());
-    auto radius = KNOB_DIAMETER * 0.46f;  // ~24px radius for 52px diameter
+    auto radius = KNOB_DIAMETER * 0.46f;  // ~22px radius for 48px diameter
 
     float startAngle = juce::MathConstants<float>::pi * 1.25f;
     float endAngle = juce::MathConstants<float>::pi * 2.75f;
     float angle = valueToAngle(currentValue);
     float normalizedValue = (currentValue - minValue) / (maxValue - minValue);
 
-    // Outer glow (bloom effect) when there's value
-    if (normalizedValue > 0.01f && !midiLearnActive)
-    {
-        g.setColour(ProgFlowColours::glowBlue());
-        g.fillEllipse(centreX - radius - 3, centreY - radius - 3,
-                      (radius + 3) * 2, (radius + 3) * 2);
-    }
-
-    // Background circle with gradient
+    // Background circle with metallic gradient (top-lit highlight)
     juce::ColourGradient knobGradient(
-        ProgFlowColours::knobBodyLight(), centreX, centreY - radius * 0.5f,
+        ProgFlowColours::knobBodyLight(), centreX, centreY - radius * 0.6f,
         ProgFlowColours::knobBody(), centreX, centreY + radius,
         false);
     g.setGradientFill(knobGradient);
@@ -82,90 +77,107 @@ void RotaryKnob::paint(juce::Graphics& g)
     // Subtle inner shadow for depth
     juce::ColourGradient innerShadow(
         juce::Colour(0x00000000), centreX, centreY,
-        juce::Colour(0x25000000), centreX, centreY + radius,
+        juce::Colour(0x20000000), centreX, centreY + radius,
         true);
     g.setGradientFill(innerShadow);
     g.fillEllipse(centreX - radius + 2, centreY - radius + 2,
                   (radius - 2) * 2, (radius - 2) * 2);
 
-    // Border ring
-    g.setColour(ProgFlowColours::glassBorder());
-    g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.0f);
-
-    // Special state borders (MIDI learn, mapped, dragging)
+    // Border ring - subtle by default, colored on states
     if (midiLearnActive)
     {
         g.setColour(ProgFlowColours::accentOrange());
-        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
-                      (radius + 1) * 2, (radius + 1) * 2, 2.0f);
+        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.5f);
     }
     else if (isDragging)
     {
         g.setColour(ProgFlowColours::accentBlue());
-        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
-                      (radius + 1) * 2, (radius + 1) * 2, 2.0f);
+        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.5f);
     }
     else if (hasMidiMapping)
     {
-        g.setColour(ProgFlowColours::accentGreen());
-        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
-                      (radius + 1) * 2, (radius + 1) * 2, 1.5f);
+        g.setColour(ProgFlowColours::accentGreen().withAlpha(0.7f));
+        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.0f);
     }
     else if (isHovering)
     {
-        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.4f));
-        g.drawEllipse(centreX - radius - 1, centreY - radius - 1,
-                      (radius + 1) * 2, (radius + 1) * 2, 1.5f);
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.5f));
+        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.0f);
+    }
+    else
+    {
+        g.setColour(juce::Colour(0x15ffffff));
+        g.drawEllipse(centreX - radius, centreY - radius, radius * 2, radius * 2, 1.0f);
     }
 
-    // Arc background (inactive portion)
+    // Arc background (inactive portion) - thin 2px
     juce::Path arcBgPath;
     arcBgPath.addCentredArc(centreX, centreY,
-                            radius * 0.78f, radius * 0.78f,
+                            radius * 0.80f, radius * 0.80f,
                             0.0f,
                             startAngle, endAngle,
                             true);
     g.setColour(ProgFlowColours::knobArcBg());
-    g.strokePath(arcBgPath, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved,
+    g.strokePath(arcBgPath, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved,
                                                   juce::PathStrokeType::rounded));
 
-    // Arc (value indicator with glow)
+    // Arc (value indicator) - thin 2px with subtle glow when dragging
     if (normalizedValue > 0.01f)
     {
         juce::Path arcPath;
         arcPath.addCentredArc(centreX, centreY,
-                              radius * 0.78f, radius * 0.78f,
+                              radius * 0.80f, radius * 0.80f,
                               0.0f,
                               startAngle, angle,
                               true);
 
-        // Glow layer
-        auto glowColour = midiLearnActive ? ProgFlowColours::glowOrange() : ProgFlowColours::glowBlue();
-        g.setColour(glowColour);
-        g.strokePath(arcPath, juce::PathStrokeType(6.0f, juce::PathStrokeType::curved,
-                                                    juce::PathStrokeType::rounded));
+        // Soft glow layer only when dragging or MIDI learn
+        if (isDragging || midiLearnActive)
+        {
+            auto glowColour = midiLearnActive ? ProgFlowColours::glowOrange() : ProgFlowColours::glowBlue();
+            g.setColour(glowColour);
+            g.strokePath(arcPath, juce::PathStrokeType(5.0f, juce::PathStrokeType::curved,
+                                                        juce::PathStrokeType::rounded));
+        }
 
         // Main arc
         auto arcColour = midiLearnActive ? ProgFlowColours::accentOrange()
-                       : (isDragging ? ProgFlowColours::accentBlue().brighter(0.2f)
+                       : (isDragging ? ProgFlowColours::accentBlue().brighter(0.15f)
                                      : ProgFlowColours::accentBlue());
         g.setColour(arcColour);
-        g.strokePath(arcPath, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved,
+        g.strokePath(arcPath, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved,
                                                     juce::PathStrokeType::rounded));
     }
 
-    // Position indicator dot
-    float indicatorRadius = radius * 0.62f;
+    // Position indicator dot - small white dot
+    float indicatorRadius = radius * 0.60f;
     float indicatorX = centreX + std::sin(angle) * indicatorRadius;
     float indicatorY = centreY - std::cos(angle) * indicatorRadius;
 
     g.setColour(ProgFlowColours::knobIndicator());
-    g.fillEllipse(indicatorX - 3.0f, indicatorY - 3.0f, 6.0f, 6.0f);
+    g.fillEllipse(indicatorX - 2.5f, indicatorY - 2.5f, 5.0f, 5.0f);
 
-    // Label
-    g.setColour(ProgFlowColours::textSecondary());
-    g.setFont(12.0f);
+    // MIDI mapped indicator - small green dot in corner
+    if (hasMidiMapping && !midiLearnActive)
+    {
+        float dotX = centreX + radius - 4;
+        float dotY = centreY - radius + 4;
+        g.setColour(ProgFlowColours::accentGreen());
+        g.fillEllipse(dotX - 3, dotY - 3, 6, 6);
+    }
+
+    // Label (11px, textMuted, uppercase style)
+    g.setColour(ProgFlowColours::textMuted());
+    g.setFont(11.0f);
     g.drawText(label.isEmpty() ? name : label, labelArea.toFloat(), juce::Justification::centred);
+
+    // Value display (12px, textPrimary)
+    if (showValue)
+    {
+        g.setColour(ProgFlowColours::textPrimary());
+        g.setFont(12.0f);
+        g.drawText(getFormattedValue(), valueArea.toFloat(), juce::Justification::centred);
+    }
 }
 
 void RotaryKnob::mouseDown(const juce::MouseEvent& e)
@@ -418,4 +430,23 @@ juce::String RotaryKnob::getTooltip()
     }
 
     return tooltip;
+}
+
+juce::String RotaryKnob::getFormattedValue() const
+{
+    juce::String result;
+
+    // Format based on interval
+    if (interval >= 1.0f)
+        result = juce::String(static_cast<int>(currentValue));
+    else if (interval >= 0.1f)
+        result = juce::String(currentValue, 1);
+    else
+        result = juce::String(currentValue, 2);
+
+    // Add suffix if set
+    if (valueSuffix.isNotEmpty())
+        result += valueSuffix;
+
+    return result;
 }

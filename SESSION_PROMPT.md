@@ -4,56 +4,58 @@
 
 ## Context
 
-ProgFlow is a DAW built with JUCE. We just finished planning a major UI redesign called "Saturn" - a FabFilter-inspired professional dark theme with purple accents.
+ProgFlow is a DAW built with JUCE. We're implementing the "Saturn" UI redesign - a FabFilter-inspired professional dark theme with purple accents.
 
-**Key decisions made:**
-1. Remove 3 redundant synths (PolyPad, Organ, String) - keep 6
-2. FabFilter-style professional dark aesthetic
-3. Purple accent color (like FabFilter Saturn)
-4. New components: CardPanel, redesigned knobs with value display
+**Completed:**
+- ✓ Phase 1: Foundation (Saturn colors, 48px knobs with value display, CardPanel, ComboBox, S/M/R buttons)
+- ✓ Phase 2: Removed 3 redundant synths (PolyPad, Organ, String) - now 6 synths
+- ✓ Phase 3: FM Editor redesigned with CardPanel layout
+
+**Current synths (6):** Analog, FM, Pro, Sampler, SoundFont, Drums
 
 ## What to do
 
-Start implementing **Phase 1: Foundation** from the Saturn UI redesign plan.
+Continue with **Phase 4: Other Synth Editors** - apply the CardPanel layout to remaining synth editors.
 
-**Phase 1 tasks:**
-1. Update LookAndFeel with Saturn color palette (purple accents, warm darks)
-2. Redesign RotaryKnob (48px, metallic gradient, value display below)
-3. Create CardPanel component (gradient bg, soft shadow, 6px corners)
-4. Style ComboBox (purple focus border, custom look)
-5. Style S/M/R buttons (Solo=cyan, Mute=gold, Record=coral)
+**Phase 4 tasks:**
+1. AnalogSynthEditor redesign
+2. ProSynthEditor redesign
+3. DrumSynthEditor redesign
+4. SamplerEditor redesign
+5. SoundFontPlayerEditor redesign
 
-## Key files to read first
+Use FMSynthEditor as the template - it shows how to use CardPanels to group related controls.
 
-- `docs/plans/2026-01-20-saturn-ui-redesign.md` - Full design spec with colors, component designs, layouts
+## Key files
+
 - `todo.md` - Task tracking
-- `Source/UI/LookAndFeel.cpp` - Current theme (needs Saturn colors)
-- `Source/UI/Common/RotaryKnob.cpp` - Current knob (needs redesign)
-- `Source/UI/Common/GlassPanel.cpp` - Reference for CardPanel
+- `docs/plans/2026-01-20-saturn-ui-redesign.md` - Full design spec
+- `Source/UI/Synths/FMSynthEditor.cpp` - **Template** for CardPanel layout
+- `Source/UI/Common/CardPanel.cpp` - CardPanel component
+- `Source/UI/Common/RotaryKnob.cpp` - 48px knob with value display
 
-## Color palette (from design doc)
+## Saturn Design Reference
 
+**CardPanel usage:**
 ```cpp
-// Backgrounds
-bgPrimary      = 0xff1a1a1f   // Deep background
-bgSecondary    = 0xff232328   // Panel backgrounds
-bgSurface      = 0xff2a2a30   // Cards/raised surfaces
-
-// Purple accent
-accentPurple   = 0xff9d7cd8   // Primary
-accentBright   = 0xffbb9af7   // Hover/active
-glowPurple     = 0x409d7cd8   // Bloom (25% opacity)
-
-// Semantic
-positive       = 0xff7dcfff   // Cyan (play, solo)
-warning        = 0xffe0af68   // Gold (mute)
-negative       = 0xfff7768e   // Coral (record)
-
-// Text
-textPrimary    = 0xffe0e0e0
-textSecondary  = 0xff888890
-textMuted      = 0xff5a5a62
+CardPanel myCard{"SECTION NAME"};
+addAndMakeVisible(myCard);
+myCard.addAndMakeVisible(myKnob);
+// In layoutContent:
+myCard.setBounds(bounds);
+auto content = myCard.getContentArea();
+myKnob.setBounds(content.withSizeKeepingCentre(KNOB_SIZE, RotaryKnob::TOTAL_HEIGHT));
 ```
+
+**Knob sizes:**
+- KNOB_SIZE = 48px diameter
+- RotaryKnob::TOTAL_HEIGHT = 80px (knob + label + value)
+
+**Colors (already implemented):**
+- Purple accent: `ProgFlowColours::accentBlue()` (0xff9d7cd8)
+- Cyan (solo/play): `ProgFlowColours::accentGreen()` (0xff7dcfff)
+- Gold (mute): `ProgFlowColours::accentOrange()` (0xffe0af68)
+- Coral (record): `ProgFlowColours::accentRed()` (0xfff7768e)
 
 ## Commands
 
@@ -62,7 +64,7 @@ textMuted      = 0xff5a5a62
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release
 
 # Run
-open build/ProgFlow_artefacts/Release/ProgFlow.app
+build/ProgFlow_artefacts/Release/ProgFlow.app/Contents/MacOS/ProgFlow &
 
 # Tests
 ./build/ProgFlowTests_artefacts/Release/ProgFlowTests
@@ -70,4 +72,4 @@ open build/ProgFlow_artefacts/Release/ProgFlow.app
 
 ---
 
-**Start with:** "Implement Phase 1 of the Saturn UI redesign. Read the design doc first, then update LookAndFeel colors, redesign the RotaryKnob, and create the CardPanel component."
+**Start with:** "Continue Phase 4 of the Saturn UI redesign. Read FMSynthEditor.cpp as a template, then redesign AnalogSynthEditor with CardPanels."

@@ -266,6 +266,13 @@ bool DrumSynth::isNoteActive(int midiNote) const
     return pads[padIndex].playing && pads[padIndex].envelope > 0.0001f;
 }
 
+int DrumSynth::getPadMidiNote(int padIndex) const
+{
+    if (padIndex < 0 || padIndex >= NUM_PADS)
+        return -1;
+    return pads[padIndex].midiNote;
+}
+
 //==============================================================================
 void DrumSynth::loadKit(const juce::String& kitName)
 {

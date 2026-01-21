@@ -434,23 +434,23 @@ void Track::setSynthType(SynthType type)
     synthType = type;
 }
 
-void Track::synthNoteOn(int midiNote, float velocity)
+void Track::synthNoteOn(int midiNote, float velocity, int sampleOffset)
 {
     juce::ScopedLock lock(synthLock);
     if (synth)
     {
-        // Add to MIDI buffer for next processBlock
+        // Add to MIDI buffer with correct sample offset for accurate timing
         int velocityInt = static_cast<int>(velocity * 127.0f);
-        synthMidiBuffer.addEvent(juce::MidiMessage::noteOn(1, midiNote, static_cast<juce::uint8>(velocityInt)), 0);
+        synthMidiBuffer.addEvent(juce::MidiMessage::noteOn(1, midiNote, static_cast<juce::uint8>(velocityInt)), sampleOffset);
     }
 }
 
-void Track::synthNoteOff(int midiNote)
+void Track::synthNoteOff(int midiNote, int sampleOffset)
 {
     juce::ScopedLock lock(synthLock);
     if (synth)
     {
-        synthMidiBuffer.addEvent(juce::MidiMessage::noteOff(1, midiNote), 0);
+        synthMidiBuffer.addEvent(juce::MidiMessage::noteOff(1, midiNote), sampleOffset);
     }
 }
 

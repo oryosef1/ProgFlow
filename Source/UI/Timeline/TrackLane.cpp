@@ -217,12 +217,12 @@ void TrackLane::paint(juce::Graphics& g)
     g.setColour(ProgFlowColours::border());
     g.drawHorizontalLine(bounds.getHeight() - 1, 0.0f, static_cast<float>(bounds.getWidth()));
 
-    // File drag hover effect
+    // File drag hover effect (Saturn accent)
     if (fileDragHover)
     {
-        g.setColour(juce::Colour(0x304ade80));  // Semi-transparent green
+        g.setColour(ProgFlowColours::accentGreen().withAlpha(0.2f));
         g.fillRect(getLocalBounds().withHeight(trackHeight));
-        g.setColour(juce::Colour(0xff4ade80));
+        g.setColour(ProgFlowColours::accentGreen());
         g.drawRect(getLocalBounds().withHeight(trackHeight), 2);
     }
 }

@@ -50,7 +50,8 @@ ChannelStrip::ChannelStrip(AudioEngine& engine)
 {
     setupComponents();
 
-    nameLabel.setText("Master", juce::dontSendNotification);
+    nameLabel.setText("MASTER", juce::dontSendNotification);
+    nameLabel.setFont(juce::Font(10.0f, juce::Font::bold));
 
     // Master doesn't have pan, mute, solo - hide them
     panKnob.setVisible(false);
@@ -69,39 +70,49 @@ ChannelStrip::ChannelStrip(AudioEngine& engine)
 
 void ChannelStrip::setupComponents()
 {
-    // Name label
+    // Name label (Saturn: centered, bold)
     nameLabel.setJustificationType(juce::Justification::centred);
     nameLabel.setColour(juce::Label::textColourId, ProgFlowColours::textPrimary());
+    nameLabel.setFont(juce::Font(11.0f, juce::Font::bold));
     addAndMakeVisible(nameLabel);
 
-    // Pan knob
+    // Pan knob (Saturn style)
     panKnob.setLabel("Pan");
     panKnob.setRange(-1.0f, 1.0f, 0.01f);
     panKnob.setDefaultValue(0.0f);
+    panKnob.setTooltipText("Stereo pan position");
     addAndMakeVisible(panKnob);
 
-    // Mute button
-    muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    // Mute button (Saturn: gold when active)
+    muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    muteButton.setTooltip("Mute track");
     addAndMakeVisible(muteButton);
 
-    // Solo button
-    soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+    // Solo button (Saturn: cyan when active)
+    soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
     soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    soloButton.setTooltip("Solo track");
     addAndMakeVisible(soloButton);
 
-    // Volume fader (vertical slider)
+    // Volume fader (vertical slider, Saturn style)
     volumeFader.setSliderStyle(juce::Slider::LinearVertical);
-    volumeFader.setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
+    volumeFader.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 16);
     volumeFader.setRange(0.0, 2.0, 0.01);
     volumeFader.setValue(1.0);
     volumeFader.setDoubleClickReturnValue(true, 1.0);
-    volumeFader.setColour(juce::Slider::thumbColourId, ProgFlowColours::accentBlue());
-    volumeFader.setColour(juce::Slider::trackColourId, ProgFlowColours::bgTertiary());
+    volumeFader.setColour(juce::Slider::thumbColourId, ProgFlowColours::textPrimary());
+    volumeFader.setColour(juce::Slider::trackColourId, ProgFlowColours::accentBlue());
     volumeFader.setColour(juce::Slider::backgroundColourId, ProgFlowColours::bgPrimary());
+    volumeFader.setColour(juce::Slider::textBoxTextColourId, ProgFlowColours::textSecondary());
+    volumeFader.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
+    volumeFader.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    volumeFader.setTextValueSuffix(" dB");
+    volumeFader.setSkewFactorFromMidPoint(1.0);  // Center at unity gain
+    volumeFader.setTooltip("Track volume");
     addAndMakeVisible(volumeFader);
 
-    // Meters
+    // Meters (Saturn: LED style)
     addAndMakeVisible(meterL);
     addAndMakeVisible(meterR);
 }
@@ -128,74 +139,92 @@ void ChannelStrip::timerCallback()
 
 void ChannelStrip::paint(juce::Graphics& g)
 {
-    auto bounds = getLocalBounds().toFloat();
+    auto bounds = getLocalBounds().reduced(2).toFloat();
 
-    // Background
-    g.setColour(selected ? ProgFlowColours::bgTertiary() : ProgFlowColours::bgSecondary());
-    g.fillRoundedRectangle(bounds, 4.0f);
+    // Saturn design: card background with gradient
+    juce::ColourGradient gradient(
+        ProgFlowColours::surfaceBg(),
+        0.0f, 0.0f,
+        ProgFlowColours::bgSecondary(),
+        0.0f, bounds.getHeight(),
+        false);
+    g.setGradientFill(gradient);
+    g.fillRoundedRectangle(bounds, 6.0f);
 
-    // Track color indicator at top
+    // Subtle border
+    g.setColour(juce::Colour(0x0dffffff));  // 5% white
+    g.drawRoundedRectangle(bounds, 6.0f, 1.0f);
+
+    // Track color indicator at top (inside card)
     if (track)
     {
         g.setColour(track->getColour());
-        g.fillRoundedRectangle(bounds.getX() + 4.0f, bounds.getY() + 4.0f,
-                               bounds.getWidth() - 8.0f, 4.0f, 2.0f);
+        g.fillRoundedRectangle(bounds.getX() + 6.0f, bounds.getY() + 6.0f,
+                               bounds.getWidth() - 12.0f, 4.0f, 2.0f);
     }
     else if (isMaster)
     {
+        // Master uses accent color
         g.setColour(ProgFlowColours::accentBlue());
-        g.fillRoundedRectangle(bounds.getX() + 4.0f, bounds.getY() + 4.0f,
-                               bounds.getWidth() - 8.0f, 4.0f, 2.0f);
+        g.fillRoundedRectangle(bounds.getX() + 6.0f, bounds.getY() + 6.0f,
+                               bounds.getWidth() - 12.0f, 4.0f, 2.0f);
     }
 
-    // Border
-    g.setColour(ProgFlowColours::border());
-    g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
+    // Selection highlight
+    if (selected)
+    {
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.15f));
+        g.fillRoundedRectangle(bounds, 6.0f);
+
+        g.setColour(ProgFlowColours::accentBlue().withAlpha(0.5f));
+        g.drawRoundedRectangle(bounds, 6.0f, 1.5f);
+    }
 }
 
 void ChannelStrip::resized()
 {
-    auto bounds = getLocalBounds().reduced(4);
+    auto bounds = getLocalBounds().reduced(6);
 
-    // Color bar + name at top (28px)
-    auto topBounds = bounds.removeFromTop(28);
+    // Color bar + name at top (26px)
+    auto topBounds = bounds.removeFromTop(26);
     topBounds.removeFromTop(8);  // Space for color bar
     nameLabel.setBounds(topBounds);
 
-    bounds.removeFromTop(4);
+    bounds.removeFromTop(2);
 
-    // Pan knob (40px)
+    // Meters at bottom (70px)
+    auto meterBounds = bounds.removeFromBottom(70);
+    int meterWidth = 10;
+    int totalMeterWidth = meterWidth * 2 + 3;
+    int meterX = (meterBounds.getWidth() - totalMeterWidth) / 2 + meterBounds.getX();
+    meterL.setBounds(meterX, meterBounds.getY(), meterWidth, meterBounds.getHeight());
+    meterR.setBounds(meterX + meterWidth + 3, meterBounds.getY(), meterWidth, meterBounds.getHeight());
+
+    bounds.removeFromBottom(4);
+
     if (!isMaster)
     {
-        panKnob.setBounds(bounds.removeFromTop(40).reduced(8, 0));
-        bounds.removeFromTop(4);
+        // Pan knob (36px)
+        panKnob.setBounds(bounds.removeFromTop(36).reduced(4, 0));
+        bounds.removeFromTop(2);
 
-        // Mute/Solo buttons (28px row)
-        auto buttonRow = bounds.removeFromTop(28);
+        // Mute/Solo buttons (24px row)
+        auto buttonRow = bounds.removeFromTop(24);
+        buttonRow.reduce(4, 0);
         int buttonWidth = (buttonRow.getWidth() - 4) / 2;
-        muteButton.setBounds(buttonRow.removeFromLeft(buttonWidth));
+        soloButton.setBounds(buttonRow.removeFromLeft(buttonWidth));
         buttonRow.removeFromLeft(4);
-        soloButton.setBounds(buttonRow);
+        muteButton.setBounds(buttonRow);
         bounds.removeFromTop(4);
     }
     else
     {
         // Extra space for master (no pan/mute/solo)
-        bounds.removeFromTop(80);
+        bounds.removeFromTop(66);
     }
 
-    // Meters at bottom (rest of height after fader)
-    auto meterBounds = bounds.removeFromBottom(80);
-    int meterWidth = 12;
-    int totalMeterWidth = meterWidth * 2 + 4;
-    int meterX = (meterBounds.getWidth() - totalMeterWidth) / 2;
-    meterL.setBounds(meterX, meterBounds.getY(), meterWidth, meterBounds.getHeight());
-    meterR.setBounds(meterX + meterWidth + 4, meterBounds.getY(), meterWidth, meterBounds.getHeight());
-
-    bounds.removeFromBottom(4);
-
-    // Volume fader fills the middle
-    volumeFader.setBounds(bounds.reduced(8, 0));
+    // Volume fader fills the rest
+    volumeFader.setBounds(bounds.reduced(4, 0));
 }
 
 void ChannelStrip::setSelected(bool isSelected)
@@ -213,12 +242,13 @@ void ChannelStrip::updateMuteButtonAppearance()
 
     if (track->isMuted())
     {
-        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentRed());
-        muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textPrimary());
+        // Saturn design: Mute = gold (warning)
+        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentOrange());
+        muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::bgPrimary());
     }
     else
     {
-        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        muteButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
         muteButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     }
     muteButton.repaint();
@@ -230,12 +260,13 @@ void ChannelStrip::updateSoloButtonAppearance()
 
     if (track->isSoloed())
     {
-        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentOrange());
+        // Saturn design: Solo = cyan (positive)
+        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentGreen());
         soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::bgPrimary());
     }
     else
     {
-        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::bgTertiary());
+        soloButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
         soloButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
     }
     soloButton.repaint();

@@ -3,14 +3,16 @@
 TrackHeaderPanel::TrackHeaderPanel(AudioEngine& audioEngine)
     : audioEngine(audioEngine)
 {
-    // Title label
-    titleLabel.setFont(juce::Font(14.0f, juce::Font::bold));
-    titleLabel.setColour(juce::Label::textColourId, ProgFlowColours::textPrimary());
+    // Title label (Saturn design: uppercase, muted color)
+    titleLabel.setFont(juce::Font(11.0f, juce::Font::bold));
+    titleLabel.setText("TRACKS", juce::dontSendNotification);
+    titleLabel.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
     addAndMakeVisible(titleLabel);
 
-    // Add track button
+    // Add track button (Saturn design: accent color, rounded)
     addTrackButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::accentBlue());
     addTrackButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textPrimary());
+    addTrackButton.setTooltip("Add new track");
     addTrackButton.onClick = [this]() { addNewTrack(); };
     addAndMakeVisible(addTrackButton);
 
@@ -18,16 +20,29 @@ TrackHeaderPanel::TrackHeaderPanel(AudioEngine& audioEngine)
     trackListContainer = std::make_unique<juce::Component>();
     viewport.setViewedComponent(trackListContainer.get(), false);
     viewport.setScrollBarsShown(true, false);
-    viewport.setScrollBarThickness(8);
+    viewport.setScrollBarThickness(6);
+    viewport.setColour(juce::ScrollBar::thumbColourId, ProgFlowColours::textMuted());
     addAndMakeVisible(viewport);
 
-    // Master meters
-    masterLabel.setFont(juce::Font(11.0f, juce::Font::bold));
-    masterLabel.setColour(juce::Label::textColourId, ProgFlowColours::textSecondary());
+    // Master meters (Saturn design)
+    masterLabel.setFont(juce::Font(10.0f, juce::Font::bold));
+    masterLabel.setText("MASTER", juce::dontSendNotification);
+    masterLabel.setColour(juce::Label::textColourId, ProgFlowColours::textMuted());
     masterLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(masterLabel);
     addAndMakeVisible(masterMeterL);
     addAndMakeVisible(masterMeterR);
+
+    // Home button to go back to project selection
+    homeButton.setButtonText(juce::String::fromUTF8("⌂")); // House icon
+    homeButton.setColour(juce::TextButton::buttonColourId, ProgFlowColours::surfaceBg());
+    homeButton.setColour(juce::TextButton::textColourOffId, ProgFlowColours::textSecondary());
+    homeButton.setTooltip("Back to project selection");
+    homeButton.onClick = [this]() {
+        if (onBackToProjectSelection)
+            onBackToProjectSelection();
+    };
+    addAndMakeVisible(homeButton);
 
     // Initial track list
     refreshTracks();
@@ -89,21 +104,29 @@ void TrackHeaderPanel::refreshTracks()
 
 void TrackHeaderPanel::paint(juce::Graphics& g)
 {
-    g.fillAll(ProgFlowColours::bgSecondary());
+    // Main background
+    g.fillAll(ProgFlowColours::bgPrimary());
 
-    // Header background
-    g.setColour(ProgFlowColours::bgTertiary());
-    g.fillRect(0, 0, getWidth(), headerHeight);
+    // Header area with subtle card styling
+    auto headerRect = juce::Rectangle<float>(0.0f, 0.0f, static_cast<float>(getWidth()),
+                                              static_cast<float>(headerHeight));
+    g.setColour(ProgFlowColours::bgSecondary());
+    g.fillRect(headerRect);
 
-    // Border below header
+    // Subtle border below header
     g.setColour(ProgFlowColours::border());
-    g.drawLine(0.0f, static_cast<float>(headerHeight), static_cast<float>(getWidth()),
-               static_cast<float>(headerHeight));
+    g.drawLine(0.0f, static_cast<float>(headerHeight),
+               static_cast<float>(getWidth()), static_cast<float>(headerHeight));
+
+    // Master section background
+    int masterY = getHeight() - masterHeight;
+    g.setColour(ProgFlowColours::bgSecondary());
+    g.fillRect(0, masterY, getWidth(), masterHeight);
 
     // Border above master section
-    int masterY = getHeight() - masterHeight;
-    g.drawLine(0.0f, static_cast<float>(masterY), static_cast<float>(getWidth()),
-               static_cast<float>(masterY));
+    g.setColour(ProgFlowColours::border());
+    g.drawLine(0.0f, static_cast<float>(masterY),
+               static_cast<float>(getWidth()), static_cast<float>(masterY));
 }
 
 void TrackHeaderPanel::resized()
@@ -112,19 +135,25 @@ void TrackHeaderPanel::resized()
 
     // Header area
     auto headerBounds = bounds.removeFromTop(headerHeight);
-    headerBounds.reduce(8, 4);
+    headerBounds.reduce(8, 6);
     addTrackButton.setBounds(headerBounds.removeFromRight(24));
     headerBounds.removeFromRight(8);
     titleLabel.setBounds(headerBounds);
 
     // Master section at bottom
     auto masterBounds = bounds.removeFromBottom(masterHeight);
-    masterBounds.reduce(8, 8);
-    masterLabel.setBounds(masterBounds.removeFromTop(16));
-    masterBounds.removeFromTop(4);
+    masterBounds.reduce(8, 4);
+
+    // Home button on top
+    homeButton.setBounds(masterBounds.removeFromTop(22).reduced(2, 0));
+    masterBounds.removeFromTop(2);
+
+    // Master label
+    masterLabel.setBounds(masterBounds.removeFromTop(12));
+    masterBounds.removeFromTop(2);
 
     // Master meters (centered)
-    int meterWidth = 16;
+    int meterWidth = 14;
     int totalMeterWidth = meterWidth * 2 + 4;
     int meterX = (masterBounds.getWidth() - totalMeterWidth) / 2 + masterBounds.getX();
     masterMeterL.setBounds(meterX, masterBounds.getY(), meterWidth, masterBounds.getHeight());
@@ -167,16 +196,16 @@ void TrackHeaderPanel::addNewTrack()
     int trackNum = audioEngine.getNumTracks() + 1;
     auto track = std::make_unique<Track>("Track " + juce::String(trackNum));
 
-    // Cycle through colors
+    // Cycle through Saturn-themed colors
     static const juce::Colour trackColors[] = {
-        juce::Colour(0xff3b82f6),  // Blue
-        juce::Colour(0xff10b981),  // Green
-        juce::Colour(0xfff59e0b),  // Yellow
-        juce::Colour(0xffef4444),  // Red
-        juce::Colour(0xff8b5cf6),  // Purple
-        juce::Colour(0xffec4899),  // Pink
-        juce::Colour(0xff06b6d4),  // Cyan
-        juce::Colour(0xfff97316),  // Orange
+        juce::Colour(0xff9d7cd8),  // Purple (Saturn accent)
+        juce::Colour(0xff7dcfff),  // Cyan
+        juce::Colour(0xffe0af68),  // Gold
+        juce::Colour(0xfff7768e),  // Coral
+        juce::Colour(0xff7aa2f7),  // Blue
+        juce::Colour(0xff9ece6a),  // Green
+        juce::Colour(0xffbb9af7),  // Light purple
+        juce::Colour(0xffff9e64),  // Orange
     };
     int colorIndex = (trackNum - 1) % 8;
     track->setColour(trackColors[colorIndex]);

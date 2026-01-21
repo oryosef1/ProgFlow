@@ -3,18 +3,24 @@
 #include "SynthEditorBase.h"
 #include "../../Audio/Synths/AnalogSynth.h"
 #include "../Common/WaveSelector.h"
+#include "../Common/CardPanel.h"
 
 /**
  * AnalogSynthEditor - Full UI panel for editing AnalogSynth parameters
  *
- * Layout: Horizontal sections separated by dividers
+ * Saturn UI Layout with CardPanels:
  * ┌─────────────────────────────────────────────────────────────────┐
  * │ [Preset Dropdown]                               [Master Volume] │
  * ├─────────────────────────────────────────────────────────────────┤
- * │ OSC 1 | OSC 2 | FILTER      | AMP ENV       | FLT ENV          │
- * │ Wave▼ | Wave▼ | Type▼       |               |                  │
- * │ ◐  ◐  | ◐  ◐  | ◐   ◐   ◐  | ◐  ◐  ◐  ◐  | ◐  ◐  ◐  ◐     │
- * │Semi Fn|Semi Dt|Cut Res  Env | A  D  S  R   | A  D  S  R       │
+ * │ ╭─────────╮ ╭─────────╮ ╭───────────────╮                      │
+ * │ │  OSC 1  │ │  OSC 2  │ │    FILTER     │                      │
+ * │ │ [Wave]  │ │ [Wave]  │ │  [Type▼]      │                      │
+ * │ │ ◐   ◐   │ │ ◐   ◐   │ │ ◐   ◐   ◐    │                      │
+ * │ ╰─────────╯ ╰─────────╯ ╰───────────────╯                      │
+ * │ ╭─────────────────────╮ ╭─────────────────────╮                │
+ * │ │      AMP ENV        │ │     FILTER ENV      │                │
+ * │ │  ◐   ◐   ◐   ◐     │ │  ◐   ◐   ◐   ◐     │                │
+ * │ ╰─────────────────────╯ ╰─────────────────────╯                │
  * └─────────────────────────────────────────────────────────────────┘
  */
 class AnalogSynthEditor : public SynthEditorBase
@@ -34,39 +40,40 @@ private:
     AnalogSynth& synth;
 
     //==========================================================================
-    // Section Labels
-    juce::Label osc1Label, osc2Label;
-    juce::Label filterLabel, ampEnvLabel, filterEnvLabel;
-
-    // Divider positions for drawing
-    std::vector<int> sectionDividers;
+    // Card Panels (Saturn design)
+    CardPanel osc1Card{"OSC 1"};
+    CardPanel osc2Card{"OSC 2"};
+    CardPanel filterCard{"FILTER"};
+    CardPanel ampEnvCard{"AMP ENVELOPE"};
+    CardPanel filterEnvCard{"FILTER ENVELOPE"};
 
     //==========================================================================
-    // Oscillator 1 (15%)
+    // Oscillator 1
     WaveSelector osc1Wave;
     RotaryKnob osc1Octave, osc1Detune;
 
-    // Oscillator 2 (15%)
+    // Oscillator 2
     WaveSelector osc2Wave;
     RotaryKnob osc2Octave, osc2Detune;
 
     //==========================================================================
-    // Filter (20%)
+    // Filter
     juce::ComboBox filterType;
     RotaryKnob filterCutoff, filterResonance, filterEnvAmount;
 
     //==========================================================================
-    // Amp Envelope (25%)
+    // Amp Envelope
     RotaryKnob ampAttack, ampDecay, ampSustain, ampRelease;
 
     //==========================================================================
-    // Filter Envelope (25%)
+    // Filter Envelope
     RotaryKnob filterAttack, filterDecay, filterSustain, filterRelease;
 
     //==========================================================================
     // Helper methods
     void setupKnob(RotaryKnob& knob, const juce::String& paramId,
-                   const juce::String& label, const juce::String& suffix = "");
+                   const juce::String& label, const juce::String& suffix = "",
+                   const juce::String& description = "");
     void setupComboBox(juce::ComboBox& box, const juce::String& paramId);
     void setupWaveSelector(WaveSelector& selector, const juce::String& paramId);
 

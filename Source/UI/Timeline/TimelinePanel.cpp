@@ -1,6 +1,7 @@
 #include "TimelinePanel.h"
 #include "../LookAndFeel.h"
 #include "../../Audio/AudioFileLoader.h"
+#include <cmath>
 
 //==============================================================================
 // TimelineViewport implementation
@@ -41,7 +42,10 @@ TimelinePanel::TimelinePanel(AudioEngine& engine)
     // Build initial track lanes
     updateTracks();
 
-    // Start timer for playhead updates (60fps)
+    // Initialize background animation
+    initParticles();
+
+    // Start timer for playhead updates and animation (60fps)
     startTimerHz(60);
 
     // Add keyboard listener
@@ -708,6 +712,13 @@ void TimelinePanel::zoomToFit()
 void TimelinePanel::paint(juce::Graphics& g)
 {
     g.fillAll(ProgFlowColours::bgPrimary());
+}
+
+void TimelinePanel::paintOverChildren(juce::Graphics& g)
+{
+    // Draw animation overlay on top of everything
+    drawParticles(g);
+    drawWaveform(g);
 
     // Draw marquee selection overlay
     if (isDraggingMarquee)
@@ -844,18 +855,20 @@ std::set<MidiClip*> TimelinePanel::getClipsInRect(const juce::Rectangle<int>& re
 
 void TimelinePanel::drawMarqueeSelection(juce::Graphics& g)
 {
-    // Draw semi-transparent fill
-    g.setColour(juce::Colour(0x203b82f6));  // Light blue fill
+    // Draw semi-transparent fill (Saturn accent)
+    g.setColour(ProgFlowColours::accentBlue().withAlpha(0.15f));
     g.fillRect(marqueeRect);
 
     // Draw border
-    g.setColour(juce::Colour(0xff3b82f6));  // Blue border
+    g.setColour(ProgFlowColours::accentBlue());
     g.drawRect(marqueeRect, 1);
 }
 
 void TimelinePanel::timerCallback()
 {
     updatePlayheadPosition();
+    updateParticles();
+    repaint();  // For background animation
 }
 
 int TimelinePanel::getBarWidth() const
@@ -948,4 +961,111 @@ void TimelinePanel::onViewportScrolled()
         // Update playhead position relative to new scroll
         updatePlayheadPosition();
     }
+}
+
+//==============================================================================
+// Background Animation
+//==============================================================================
+
+void TimelinePanel::initParticles()
+{
+    particles.clear();
+    std::uniform_real_distribution<float> xDist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> yDist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> vDist(-0.001f, 0.001f);
+    std::uniform_real_distribution<float> sizeDist(2.0f, 6.0f);
+    std::uniform_real_distribution<float> alphaDist(0.1f, 0.3f);
+
+    for (int i = 0; i < 40; ++i)
+    {
+        Particle p;
+        p.x = xDist(animRng);
+        p.y = yDist(animRng);
+        p.vx = vDist(animRng);
+        p.vy = vDist(animRng) - 0.0005f;  // Slight upward drift
+        p.size = sizeDist(animRng);
+        p.alpha = alphaDist(animRng);
+        particles.push_back(p);
+    }
+}
+
+void TimelinePanel::updateParticles()
+{
+    animationTime += 0.016f;  // ~60fps
+
+    for (auto& p : particles)
+    {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap around
+        if (p.x < 0.0f) p.x += 1.0f;
+        if (p.x > 1.0f) p.x -= 1.0f;
+        if (p.y < 0.0f) p.y += 1.0f;
+        if (p.y > 1.0f) p.y -= 1.0f;
+
+        // Alpha pulsing
+        p.alpha = 0.15f + 0.1f * std::sin(animationTime * 2.0f + p.x * 10.0f);
+    }
+}
+
+void TimelinePanel::drawParticles(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    for (const auto& p : particles)
+    {
+        float x = p.x * bounds.getWidth();
+        float y = p.y * bounds.getHeight();
+
+        // Particle with glow
+        juce::ColourGradient glow(
+            ProgFlowColours::accentBlue().withAlpha(p.alpha),
+            x, y,
+            ProgFlowColours::accentBlue().withAlpha(0.0f),
+            x + p.size * 3.0f, y,
+            true);
+
+        g.setGradientFill(glow);
+        g.fillEllipse(x - p.size, y - p.size, p.size * 2.0f, p.size * 2.0f);
+    }
+}
+
+void TimelinePanel::drawWaveform(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    float waveY = bounds.getBottom() - 25.0f;
+
+    juce::Path wavePath;
+
+    int numPoints = 100;
+    for (int i = 0; i <= numPoints; ++i)
+    {
+        float nx = static_cast<float>(i) / numPoints;
+        float x = nx * bounds.getWidth();
+
+        // Multiple sine waves for organic look
+        float y = waveY;
+        y += std::sin(nx * 8.0f + animationTime * 1.5f) * 12.0f;
+        y += std::sin(nx * 12.0f - animationTime * 2.0f) * 6.0f;
+        y += std::sin(nx * 20.0f + animationTime * 0.8f) * 3.0f;
+
+        // Fade at edges
+        float edgeFade = std::min(nx, 1.0f - nx) * 4.0f;
+        edgeFade = juce::jmin(1.0f, edgeFade);
+        y = waveY + (y - waveY) * edgeFade;
+
+        if (i == 0)
+            wavePath.startNewSubPath(x, y);
+        else
+            wavePath.lineTo(x, y);
+    }
+
+    // Waveform with glow
+    g.setColour(ProgFlowColours::accentBlue().withAlpha(0.08f));
+    g.strokePath(wavePath, juce::PathStrokeType(8.0f));
+    g.setColour(ProgFlowColours::accentBlue().withAlpha(0.2f));
+    g.strokePath(wavePath, juce::PathStrokeType(3.0f));
+    g.setColour(ProgFlowColours::accentBlue().withAlpha(0.5f));
+    g.strokePath(wavePath, juce::PathStrokeType(1.5f));
 }
